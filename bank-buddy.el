@@ -310,7 +310,8 @@
     ;; Sum up spending by category
     (maphash (lambda (key value)
                (let* ((parts (split-string key "-"))
-                      (category (nth 1 parts))
+                      ;; Fix: The category is the last part (parts are "YYYY" "MM" "category")
+                      (category (nth (1- (length parts)) parts))
                       (existing (assoc category categories)))
                  (if existing
                      (setcdr existing (+ (cdr existing) value))
@@ -327,7 +328,7 @@
     (let ((counter 1))
       (dolist (cat categories)
         (when (<= counter 10) ;; Only show top 10
-                      (let ((cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
+          (let ((cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
             (insert (format "%d. *%s:* £%.2f (%.1f%%)\n"
                             counter
                             (or cat-name (car cat))
