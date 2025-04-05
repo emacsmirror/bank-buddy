@@ -1,0 +1,61 @@
+#+title: Financial Report
+#+options: toc:2 num:nil
+
+* Summary Overview
+
+- *Total Transactions:* 96
+- *Date Range:* 2025-03-10 to 2025-03-28 (18 days)
+- *Total Spending:* £3431.03
+- *Average Daily Spending:* £190.61
+- *Average Monthly Spending:* £5718.38
+
+* Transaction Size Distribution
+
+- *Under £10:* 37 transactions (0.0%)
+- *£10 to £50:* 49 transactions (0.0%)
+- *£50 to £100:* 6 transactions (0.0%)
+- *Over £100:* 4 transactions (0.0%)
+
+* Top Spending Categories
+
+1. *03:* £3431.03 (100.0%)
+
+* Top 10 Merchants
+
+1. *NATWEST-BANK-REFERENCE:-84911384/3718923:* £1149.36
+2. *PAYPAL-PAYMENT-REFERENCE:-5MQJ222266ZHE:* £609.93
+3. *SAINSBURYS.CO.UK-CD-2515:* £220.74
+4. *WM-MORRISONS-STORE-CD-2515:* £215.86
+5. *Vinted-CD-2515:* £98.29
+6. *BT-GROUP-PLC-REFERENCE:-GB23453584-000056:* £74.82
+7. *VIRGIN-MEDIA-PYMTS-REFERENCE:-403829603001:* £66.99
+8. *MARKS&SPENCER-PLC-SF-CD-2515:* £61.95
+9. *Kate-KATE:* £60.00
+10. *TO-Evie-309628-00040533:* £50.00
+
+* Monthly Spending Patterns
+
+- *Highest Month:* 2025-03 (£3431.03)
+- *Lowest Month:* 2025-03 (£3431.03)
+- *Average Monthly Spending:* £3431.03
+
+** Monthly Spending Breakdown
+#+begin_src 
+2025-01: £0.00    
+2025-02: £0.00    
+2025-03: £3431.03    
+2025-04: £0.00    
+2025-05: £0.00    
+2025-06: £0.00    
+2025-07: £0.00    
+2025-08: £0.00    
+2025-09: £0.00    
+2025-10: £0.00    
+2025-11: £0.00    
+2025-12: £0.00    
+#+end_src
+
+* Recurring Subscriptions
+
+Your estimated monthly subscription cost is approximately *£0.00*
+

@@ -1,0 +1,107 @@
+#+title: Financial Reporter
+#+author: James Dyer
+#+email: captainflasmr@gmail.com
+#+language: en
+#+options: ':t toc:nil author:nil email:nil num:nil title:nil
+#+todo: TODO DOING | DONE
+#+startup: showall
+
+* Bank-Buddy: Your Financial Analysis Companion for Emacs
+
+Bank-buddy helps you analyze your banking transactions by automatically categorizing them, identifying spending patterns, and generating comprehensive reports in Org format.
+
+* Features
+
+- *Automated Transaction Categorization* - Uses regex patterns to categorize your spending
+- *Comprehensive Reports* - Generates detailed financial reports in Org format
+- *Subscription Detection* - Identifies recurring payments and estimates monthly subscription costs
+- *Merchant Analysis* - Tracks your spending by merchant
+- *Transaction Size Analysis* - Breaks down transactions by size categories
+- *Monthly Spending Patterns* - Visualizes your spending over time
+
+* Getting Started
+
+** 1. Installation
+
+*** Prerequisites
+
+- Emacs 26.1 or later
+- csv 0.5 or later
+
+*** MELPA
+
+#+begin_src emacs-lisp
+   (use-package bank-buddy)
+#+end_src
+
+*** Manual Installation
+
+Clone this repository:
+
+#+begin_src shell
+git clone https://github.com/captainflasmr/bank-buddy.git
+#+end_src
+
+**** init.el
+
+#+begin_src emacs-lisp
+(add-to-list 'load-path "path/to/bank-buddy")
+(require 'bank-buddy)
+#+end_src
+
+OR
+
+#+begin_src elisp
+ (use-package bank-buddy
+   :load-path "path/to/bank-buddy")
+#+end_src
+
+** 2. *Generate a Report*:
+   #+begin_src elisp
+   ;; Interactive function to select input and output files
+   M-x bank-buddy-generate-report
+   
+   ;; Or programmatically:
+   (bank-buddy-generate-report "path/to/bank-statement.csv" "path/to/report.org")
+   #+end_src
+
+** 3. *Customization Options*:
+   #+begin_src elisp
+   ;; Exclude large transactions
+   (setq bank-buddy-exclude-large-txns t)
+   (setq bank-buddy-large-txn-threshold 10000)
+   
+   ;; Adjust subscription detection sensitivity
+   (setq bank-buddy-subscription-min-occurrences 3)
+
+* Input Format
+
+The package expects a CSV file with these columns:
+1. Transaction date (YYYY-MM-DD)
+2. Transaction description
+3. Debit amount
+
+* Roadmap
+
+1. *Data Visualization* - Add interactive charts and graphs using Org-babel
+2. *Budget Tracking* - Compare spending against budgeted amounts
+3. *Custom Category Mapping* - Allow user-defined categories
+4. *Multi-Account Support* - Handle transactions from multiple accounts
+5. *Export Formats* - Add PDF and HTML export options
+6. *AI-Powered Categorization* - Use ML to improve categorization accuracy
+   
+* Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a pull request
+
+* License
+
+[[https://opensource.org/licenses/MIT][MIT License]]
+
+* Acknowledgments
+
+- Emacs community for continuous inspiration
