@@ -75,6 +75,7 @@ OR
    
    ;; Adjust subscription detection sensitivity
    (setq bank-buddy-subscription-min-occurrences 3)
+   #+end_src
 
 * Input Format
 
