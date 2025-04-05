@@ -525,6 +525,155 @@
          ((>= avg-interval 300) "annual")
          (t "irregular"))))))
 
+(defun bank-buddy-generate-plots ()
+  "Generate org-plot visualizations of financial data."
+  (insert "\n* Data Visualizations\n\n")
+  
+  ;; Monthly spending plot with time-based x-axis
+  (insert "** Monthly Spending Trend\n\n")
+  (insert "This plot shows your spending over time. Each point represents a month's total spending.\n\n")
+  
+  ;; Use timecolumn format for proper time-based plotting
+  (insert "#+PLOT: title:\"Monthly Spending Trend\" ind:1 deps:(2) type:2d with:linespoints \
+set:\"grid\" set:\"ylabel 'Spending (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" \
+set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
+  
+  (insert "| Month | Spending |\n")
+  (insert "|-------+----------|\n")
+  
+  ;; Sort months chronologically
+  (let* ((month-list '()))
+    
+    ;; Convert hash to list for sorting
+    (maphash (lambda (month amount) 
+               (push (cons month amount) month-list))
+             bank-buddy-monthly-totals)
+    
+    ;; Sort by month chronologically
+    (setq month-list (sort month-list (lambda (a b) (string< (car a) (car b)))))
+    
+    ;; Generate table rows
+    (dolist (month-data month-list)
+      (insert (format "| %s | %.2f |\n" 
+                     (car month-data) (cdr month-data)))))
+  
+  (insert "\n\n")
+  
+  ;; Spending by category plot
+  (insert "** Top Spending Categories\n\n")
+  (insert "#+PLOT: title:\"Top Spending Categories\" ind:1 deps:(2) type:histogram with:histogram \
+set:\"style fill solid 0.8\" set:\"grid\" set:\"ylabel 'Amount (£)'\" set:\"xtic(1)\" \
+set:\"xtics rotate by -45\"\n")
+  
+  (insert "| Category | Amount |\n")
+  (insert "|---------+--------|\n")
+  
+  ;; Generate category data
+  (let ((categories '()))
+    
+    ;; Sum up spending by category
+    (maphash (lambda (key value)
+               (let* ((parts (split-string key "-"))
+                      (category (nth (1- (length parts)) parts))
+                      (existing (assoc category categories)))
+                 (if existing
+                     (setcdr existing (+ (cdr existing) value))
+                   (push (cons category value) categories))))
+             bank-buddy-cat-tot)
+    
+    ;; Sort by amount (descending)
+    (setq categories (sort categories (lambda (a b) (> (cdr a) (cdr b)))))
+    
+    ;; Generate table rows (top 10 only)
+    (dotimes (i (min 10 (length categories)))
+      (let* ((cat (nth i categories))
+             (cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
+        (insert (format "| %s | %.2f |\n" 
+                       (or cat-name (car cat))
+                       (cdr cat))))))
+  
+  (insert "\n\n")
+  
+  ;; Transaction size distribution plot
+  (insert "** Transaction Size Distribution\n\n")
+  (insert "#+PLOT: title:\"Transaction Size Distribution\" ind:1 deps:(2) type:pie with:labels\n")
+  (insert "| Category | Count |\n")
+  (insert "|----------+-------|\n")
+  
+  (let* ((under-10 (gethash "under-10" bank-buddy-txn-size-dist 0))
+         (to-50 (gethash "10-to-50" bank-buddy-txn-size-dist 0))
+         (to-100 (gethash "50-to-100" bank-buddy-txn-size-dist 0))
+         (over-100 (gethash "over-100" bank-buddy-txn-size-dist 0)))
+    
+    (insert "| Under £10 | ")
+    (insert (format "%d |\n" under-10))
+    (insert "| £10 to £50 | ")
+    (insert (format "%d |\n" to-50))
+    (insert "| £50 to £100 | ")
+    (insert (format "%d |\n" to-100))
+    (insert "| Over £100 | ")
+    (insert (format "%d |\n" over-100)))
+  
+  (insert "\n\n")
+  
+  ;; Subscription trend with time-based x-axis
+  (insert "** Monthly Subscription Costs\n\n")
+  (insert "This plot shows your estimated total subscription costs over time based on detected recurring payments.\n\n")
+  
+  ;; Use timecolumn format for time-based plotting
+  (insert "#+PLOT: title:\"Monthly Subscription Costs\" ind:1 deps:(2) type:2d with:linespoints \
+set:\"grid\" set:\"ylabel 'Cost (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" \
+set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
+  
+  (insert "| Month | Cost |\n")
+  (insert "|-------+------|\n")
+  
+  ;; Create a simple estimation of subscription costs over time
+  (let* ((subscriptions '())
+         (monthly-by-date (make-hash-table :test 'equal)))
+    
+    ;; Extract subscription data
+    (maphash
+     (lambda (key occurrences)
+       (when (>= (length occurrences) bank-buddy-subscription-min-occurrences)
+         (let* ((parts (split-string key "-"))
+                (sub-name (nth 0 parts))
+                (amount (string-to-number (car (last parts))))
+                (freq (bank-buddy-analyze-subscription-frequency occurrences)))
+           
+           ;; Add each occurrence to its month
+           (dolist (occurrence occurrences)
+             (let* ((date (car occurrence))
+                    (month (substring date 0 7))
+                    (monthly-cost
+                     (cond
+                      ((string= freq "monthly") amount)
+                      ((string= freq "bi-weekly") (/ (* amount 2) 1.0))
+                      ((string= freq "weekly") (/ (* amount 4) 1.0))
+                      ((string= freq "annual") (/ amount 12.0))
+                      (t amount))))
+               
+               ;; Add to monthly totals
+               (puthash month
+                        (+ (gethash month monthly-by-date 0) monthly-cost)
+                        monthly-by-date))))))
+     bank-buddy-subs)
+    
+    ;; Generate table rows for subscription costs by month
+    (let ((month-list '()))
+      ;; Convert hash to list for sorting
+      (maphash (lambda (month amount) 
+                 (push (cons month amount) month-list))
+               monthly-by-date)
+      
+      ;; Sort by month chronologically
+      (setq month-list (sort month-list (lambda (a b) (string< (car a) (car b)))))
+      
+      ;; Generate table rows
+      (dolist (month-data month-list)
+        (insert (format "| %s | %.2f |\n" 
+                       (car month-data) (cdr month-data)))))))
+
 ;;;###autoload
 (defun bank-buddy-generate-report (csv-file output-file)
   "Generate financial report from CSV-FILE and save to OUTPUT-FILE."
@@ -546,6 +695,7 @@
     (bank-buddy-generate-top-merchants)
     (bank-buddy-generate-monthly-spending)
     (bank-buddy-generate-subscriptions)
+    (bank-buddy-generate-plots)  ;; Add this line to include plots
     
     ;; Write to file
     (write-file output-file))
