@@ -450,7 +450,7 @@
      (lambda (key occurrences)
        (when (>= (length occurrences) bank-buddy-subscription-min-occurrences)
          (let* ((parts (split-string key "-"))
-                (sub-name (nth 0 key))
+                (sub-name (nth 0 parts)) ;; FIXED: Use parts instead of key
                 (amount (car (last parts)))
                 (frequencies (bank-buddy-analyze-subscription-frequency occurrences)))
            (push (list sub-name (string-to-number amount) frequencies) subscriptions))))
