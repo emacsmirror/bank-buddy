@@ -294,13 +294,18 @@
     
     (insert "\n* Transaction Size Distribution\n\n")
     (insert (format "- *Under £10:* %d transactions (%.1f%%)\n" 
-                    under-10 (* 100.0 (/ under-10 total))))
+                    under-10 
+                    ;; Fix: Convert to float before division to avoid integer division
+                    (* 100.0 (/ (float under-10) total))))
     (insert (format "- *£10 to £50:* %d transactions (%.1f%%)\n" 
-                    to-50 (* 100.0 (/ to-50 total))))
+                    to-50 
+                    (* 100.0 (/ (float to-50) total))))
     (insert (format "- *£50 to £100:* %d transactions (%.1f%%)\n" 
-                    to-100 (* 100.0 (/ to-100 total))))
+                    to-100 
+                    (* 100.0 (/ (float to-100) total))))
     (insert (format "- *Over £100:* %d transactions (%.1f%%)\n" 
-                    over-100 (* 100.0 (/ over-100 total))))))
+                    over-100 
+                    (* 100.0 (/ (float over-100) total))))))
 
 (defun bank-buddy-generate-top-spending-categories ()
   "Generate top spending categories section."
