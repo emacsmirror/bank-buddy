@@ -1,0 +1,272 @@
+#+title: Financial Report
+#+options: toc:2 num:nil
+#+startup: inlineimages
+
+* Summary Overview
+
+- *Total Transactions:* 3365
+- *Date Range:* 2021-11-16 to 2025-03-28 (1228 days)
+- *Total Spending:* £168737.16
+- *Average Daily Spending:* £137.41
+- *Average Monthly Spending:* £4122.24
+
+* Transaction Size Distribution
+
+- *Under £10:* 793 transactions (23.6%)
+- *£10 to £50:* 2043 transactions (60.7%)
+- *£50 to £100:* 274 transactions (8.1%)
+- *Over £100:* 255 transactions (7.6%)
+
+* Top Spending Categories
+
+1. *Housing:* £36878.72 (21.9%)
+2. *PayPal:* £24133.31 (14.3%)
+3. *Food:* £20355.18 (12.1%)
+4. *Amazon:* £18816.11 (11.2%)
+5. *Credit Card:* £18567.84 (11.0%)
+6. *Utilities:* £15169.06 (9.0%)
+7. *Pension:* £8204.80 (4.9%)
+8. *Personal (Katherine):* £5451.08 (3.2%)
+9. *Other:* £4939.48 (2.9%)
+10. *Phone:* £2720.74 (1.6%)
+
+* Top 10 Merchants
+
+1. *PAYPAL-PAYMENT-REFERENCE:-5MQJ222266ZHE:* £24006.30
+2. *BETHANIE-YEONG-FASTER-PAYMENT:* £17350.00
+3. *BETHANIE-YEONG-RENT2023:* £17200.00
+4. *Card-ending-8555-:* £14452.90
+5. *DELIVEROO-CD-2515:* £9048.51
+6. *AMZNMktplace-CD-2515:* £7724.24
+7. *SCOTTISH-WIDOWS-REFERENCE:-0830298715:* £6358.72
+8. *WM-MORRISONS-STORE-CD-2515:* £5444.76
+9. *PCC-COLLECTION-ACC-REFERENCE:-10200189X:* £4727.92
+10. *Just-Eat-CD-2515:* £4347.50
+
+* Monthly Spending Patterns
+
+- *Highest Month:* 2025-02 (£7547.36)
+- *Lowest Month:* 2022-02 (£2534.28)
+- *Average Monthly Spending:* £4115.54
+
+** Monthly Spending Breakdown
+#+begin_src 
+2021-01: £0.00    2022-01: £3264.20    2023-01: £3353.97    2024-01: £3167.64    2025-01: £4484.11    
+2021-02: £0.00    2022-02: £2534.28    2023-02: £3072.02    2024-02: £4280.32    2025-02: £7547.36    
+2021-03: £0.00    2022-03: £3101.17    2023-03: £3863.70    2024-03: £3539.56    2025-03: £6277.77    
+2021-04: £0.00    2022-04: £3784.58    2023-04: £3444.40    2024-04: £4249.33    2025-04: £0.00    
+2021-05: £0.00    2022-05: £3188.98    2023-05: £2912.74    2024-05: £7378.34    2025-05: £0.00    
+2021-06: £0.00    2022-06: £3103.47    2023-06: £3958.20    2024-06: £4964.80    2025-06: £0.00    
+2021-07: £0.00    2022-07: £3053.53    2023-07: £5535.64    2024-07: £5898.55    2025-07: £0.00    
+2021-08: £0.00    2022-08: £3231.33    2023-08: £3225.18    2024-08: £4763.87    2025-08: £0.00    
+2021-09: £0.00    2022-09: £3419.06    2023-09: £2633.31    2024-09: £5613.50    2025-09: £0.00    
+2021-10: £0.00    2022-10: £3502.32    2023-10: £3978.15    2024-10: £5664.76    2025-10: £0.00    
+2021-11: £4300.70    2022-11: £3361.52    2023-11: £3357.20    2024-11: £4925.32    2025-11: £0.00    
+2021-12: £2948.07    2022-12: £3631.39    2023-12: £4596.10    2024-12: £5626.72    2025-12: £0.00    
+#+end_src
+
+* Recurring Subscriptions
+
+Your estimated monthly subscription cost is approximately *£199.16*
+
+1. *Racing TV:* £29.98/month
+2. *Google Play:* £26.00/month
+3. *Google Play:* £24.99/month
+4. *Racing TV:* £24.98/month
+5. *Google Play:* £18.99/month
+6. *YouTube Premium:* £12.99/month
+7. *Google Play:* £12.99/month
+8. *YouTube Premium:* £11.99/month
+9. *Google Play:* £11.99/month
+10. *Sainsbury's Delivery Pass:* £7.50/month
+
+* Data Visualizations
+
+** Monthly Spending Trend
+
+This plot shows your spending over time. Each point represents a month's total spending.
+
+#+PLOT: title:"Monthly Spending Trend" ind:1 deps:(2) type:2d with:linespoints set:"grid" set:"ylabel 'Spending (£)'" set:"xdata time" set:"timefmt '%Y-%m'" set:"format x '%b\n%Y'" set:"xtics rotate by -45"
+#+NAME: monthly-spending-trend
+| Month | Spending |
+|-------+----------|
+| 2021-11 | 4300.70 |
+| 2021-12 | 2948.07 |
+| 2022-01 | 3264.20 |
+| 2022-02 | 2534.28 |
+| 2022-03 | 3101.17 |
+| 2022-04 | 3784.58 |
+| 2022-05 | 3188.98 |
+| 2022-06 | 3103.47 |
+| 2022-07 | 3053.53 |
+| 2022-08 | 3231.33 |
+| 2022-09 | 3419.06 |
+| 2022-10 | 3502.32 |
+| 2022-11 | 3361.52 |
+| 2022-12 | 3631.39 |
+| 2023-01 | 3353.97 |
+| 2023-02 | 3072.02 |
+| 2023-03 | 3863.70 |
+| 2023-04 | 3444.40 |
+| 2023-05 | 2912.74 |
+| 2023-06 | 3958.20 |
+| 2023-07 | 5535.64 |
+| 2023-08 | 3225.18 |
+| 2023-09 | 2633.31 |
+| 2023-10 | 3978.15 |
+| 2023-11 | 3357.20 |
+| 2023-12 | 4596.10 |
+| 2024-01 | 3167.64 |
+| 2024-02 | 4280.32 |
+| 2024-03 | 3539.56 |
+| 2024-04 | 4249.33 |
+| 2024-05 | 7378.34 |
+| 2024-06 | 4964.80 |
+| 2024-07 | 5898.55 |
+| 2024-08 | 4763.87 |
+| 2024-09 | 5613.50 |
+| 2024-10 | 5664.76 |
+| 2024-11 | 4925.32 |
+| 2024-12 | 5626.72 |
+| 2025-01 | 4484.11 |
+| 2025-02 | 7547.36 |
+| 2025-03 | 6277.77 |
+
+#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Monthly Spending Trend"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--monthly-spending-trend.png]]
+
+
+** Top Spending Categories
+
+#+PLOT: title:"Top Spending Categories" ind:1 deps:(2)
+#+NAME: top-spending-categories
+| Category             |   Amount |
+|----------------------+----------|
+| Housing              | 36878.72 |
+| PayPal               | 24133.31 |
+| Food                 | 20355.18 |
+| Amazon               | 18816.11 |
+| Credit Card          | 18567.84 |
+| y                    | 15169.06 |
+| Pension              |  8204.80 |
+| Personal (Katherine) |  5451.08 |
+| Other                |  4939.48 |
+| Phone                |  2720.74 |
+
+#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Top Spending Categories"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--top-spending-categories.png]]
+
+** Transaction Size Distribution
+
+#+PLOT: title:"Transaction Size Distribution" ind:1 deps:(2) type:2d with:lines
+#+NAME: transaction-size-distribution
+| Category    | Count |
+|-------------+-------|
+| Under £10   |   793 |
+| £10 to £50  |  2043 |
+| £50 to £100 |   274 |
+| Over £100   |   255 |
+
+#+begin_src gnuplot :var data=transaction-size-distribution :file financial-report--transaction-size-distribution.png :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Top Spending Categories"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--transaction-size-distribution.png]]
+
+** Monthly Subscription Costs
+
+This plot shows your estimated total subscription costs over time based on detected recurring payments.
+
+#+PLOT: title:"Monthly Subscription Costs" ind:1 deps:(2) type:2d with:linespoints set:"grid" set:"ylabel 'Cost (£)'" set:"xdata time" set:"timefmt '%Y-%m'" set:"format x '%b\n%Y'" set:"xtics rotate by -45"
+#+NAME: monthly-subscription-costs
+|   Month |   Cost |
+|---------+--------|
+| 2021-11 |  24.98 |
+| 2021-12 |  72.94 |
+| 2022-01 |  24.98 |
+| 2022-02 |  48.96 |
+| 2022-03 |  96.92 |
+| 2022-04 |  24.98 |
+| 2022-05 |  83.92 |
+| 2022-06 |  28.97 |
+| 2022-07 |  52.95 |
+| 2022-08 |  76.93 |
+| 2022-09 |  30.47 |
+| 2022-10 |  48.96 |
+| 2022-11 |  48.96 |
+| 2022-12 |  48.96 |
+| 2023-01 |  78.93 |
+| 2023-02 |  24.98 |
+| 2023-03 |  72.94 |
+| 2023-04 |  24.98 |
+| 2023-05 |  78.93 |
+| 2023-06 |  32.26 |
+| 2023-07 |  50.25 |
+| 2023-08 |  80.22 |
+| 2023-09 |  50.98 |
+| 2023-10 | 114.92 |
+| 2023-11 |  50.98 |
+| 2023-12 |  82.95 |
+| 2024-01 | 114.92 |
+| 2024-02 |  50.98 |
+| 2024-03 | 106.94 |
+| 2024-04 |  81.96 |
+| 2024-05 | 126.93 |
+| 2024-06 |  99.96 |
+| 2024-07 | 151.92 |
+| 2024-08 |  99.96 |
+| 2024-09 | 125.94 |
+| 2024-10 | 107.94 |
+| 2024-11 |  59.97 |
+| 2024-12 | 100.93 |
+| 2025-01 |  67.45 |
+| 2025-02 |  33.97 |
+| 2025-03 |  67.45 |
+
+#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Monthly Spending Trend"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--monthly-subscription-costs.png]]
