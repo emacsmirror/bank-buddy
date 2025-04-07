@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'bank-buddy-cat-mode)
 (require 'csv)
 (require 'cl-lib)
 (require 'async) ;; Require the async library
@@ -64,11 +65,11 @@
   :group 'applications)
 
 (defcustom bank-buddy-exclude-large-txns t
-  "Whether to exclude transactions over £10,000."
+  "Whether to exclude transactions."
   :type 'boolean
   :group 'bank-buddy)
 
-(defcustom bank-buddy-large-txn-threshold 10000
+(defcustom bank-buddy-large-txn-threshold 2000
   "Threshold for large transactions in pounds."
   :type 'number
   :group 'bank-buddy)
