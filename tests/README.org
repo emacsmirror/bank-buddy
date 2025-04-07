@@ -1,0 +1,106 @@
+* Bank Buddy Testing Framework
+
+This document describes how to use the test framework for the Bank Buddy Emacs package. The test suite ensures that Bank Buddy correctly parses bank statement CSV files, accurately categorizes transactions, and produces reports as expected.
+
+** Files in the Test Suite
+
+1. *test-bank-statement.csv* - A synthetic bank statement with test data covering all categories
+2. *expected-report.org* - The expected report output for comparison
+3. *bank-buddy-test.el* - The test functions that run the tests and compare outputs
+
+** Setup
+
+1. Place all test files in the same directory. The recommended location is a subdirectory called =tests= within your bank-buddy package directory:
+
+#+begin_src 
+bank-buddy/
+  ├── bank-buddy.el
+  └── tests/
+      ├── bank-buddy-test.el
+      ├── test-bank-statement.csv
+      └── expected-report.org
+#+end_src
+
+2. Ensure you have the necessary dependencies:
+   - ERT (Emacs Regression Testing) - built into Emacs
+   - ert-async (for testing asynchronous functions) - install if not already present
+   - bank-buddy package (the one being tested)
+
+** Running the Tests
+
+*** Interactively
+
+1. Load the test file:
+#+begin_src elisp
+M-x load-file RET /path/to/bank-buddy-test.el RET
+#+end_src
+
+2. Run all tests:
+#+begin_src elisp
+M-x bank-buddy-run-tests RET
+#+end_src
+
+*** From Elisp
+
+#+begin_src elisp
+(use-package bank-buddy-test
+   :load-path "~/source/repos/bank-buddy/tests")
+(bank-buddy-run-tests)
+#+end_src
+
+*** Options
+
+- *Generate test files only*: If you just want to set up the test files without running tests:
+#+begin_src elisp
+M-x bank-buddy-test-create-test-files RET
+#+end_src
+
+** Understanding the Tests
+
+The main test function =bank-buddy-test-report-generation= performs the following:
+
+1. Sets up the test environment (creates test files if needed)
+2. Calls =bank-buddy-generate-report= on the test CSV file
+3. Waits for the asynchronous process to complete
+4. Compares the generated report with the expected report, ignoring variable content like timestamps
+5. Cleans up any temporary files
+
+** Customizing the Tests
+
+*** Adding New Test Cases
+
+To add new test cases that cover more edge cases or specific features:
+
+1. Modify =test-bank-statement.csv= to include the relevant test data
+2. Update =expected-report.org= to reflect the expected output for the new test data
+3. You may need to add new test functions in =bank-buddy-test.el= if testing specific functions
+
+*** Adding Different CSV Formats
+
+If you need to test different CSV formats:
+
+1. Create additional CSV test files (e.g., =test-bank-statement-format-2.csv=)
+2. Create corresponding expected output files
+3. Add new test functions that use these files
+
+** Troubleshooting
+
+If tests are failing, you can:
+
+1. Compare the generated report with the expected report manually:
+#+begin_src elisp
+(bank-buddy-test--reports-equal-p "path/to/generated/report.org" "path/to/expected/report.org")
+#+end_src
+
+2. Check the variable parts that might cause false failures by examining the normalized content:
+#+begin_src elisp
+(bank-buddy-test--normalize-report "path/to/report.org")
+#+end_src
+
+3. Adjust the normalization function =bank-buddy-test--normalize-report= if specific formatting differences are causing false failures
+
+** Notes
+
+- The test framework handles variable content like timestamps by normalizing reports before comparison
+- Test data is designed to cover all categories and features of Bank Buddy
+- The asynchronous nature of bank-buddy is handled with a timeout-based approach for reliable testing
