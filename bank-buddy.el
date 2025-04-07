@@ -404,9 +404,12 @@ This function runs in a separate process via async.el."
 
 
 (defun bank-buddy-generate-top-spending-categories ()
-  "Generate top spending categories section."
+  "Generate top spending categories section with monthly and yearly averages."
   (let ((categories '())
-        (total-spending 0))
+        (total-spending 0)
+        (total-months 0)
+        (first-month nil)
+        (last-month nil))
 
     ;; Sum up spending by category
     (maphash (lambda (key value)
@@ -416,11 +419,38 @@ This function runs in a separate process via async.el."
                       (existing (assoc category categories)))
                  (if existing
                      (setcdr existing (+ (cdr existing) value))
-                   (push (cons category value) categories))))
+                   (push (cons category value) categories))
+                 
+                 ;; Track months for average calculations
+                 (when (>= (length parts) 2)
+                   (let ((month-year (concat (nth 0 parts) "-" (nth 1 parts))))
+                     (when (or (not first-month) (string< month-year first-month))
+                       (setq first-month month-year))
+                     (when (or (not last-month) (string> month-year last-month))
+                       (setq last-month month-year))))))
              bank-buddy-cat-tot)
 
     ;; Calculate total spending
     (setq total-spending (apply '+ (mapcar 'cdr categories)))
+    
+    ;; Calculate number of months from the monthly-totals hash
+    (setq total-months (hash-table-count bank-buddy-monthly-totals))
+    
+    ;; If no months data in the hash, try to calculate from first and last months
+    (when (and (= total-months 0) first-month last-month)
+      (let* ((first-parts (split-string first-month "-"))
+             (last-parts (split-string last-month "-"))
+             (first-year (string-to-number (nth 0 first-parts)))
+             (first-month-num (string-to-number (nth 1 first-parts)))
+             (last-year (string-to-number (nth 0 last-parts)))
+             (last-month-num (string-to-number (nth 1 last-parts))))
+        (setq total-months (+ (* 12 (- last-year first-year))
+                              (- last-month-num first-month-num)
+                              1)))) ; +1 because we include both first and last month
+    
+    ;; Use at least 1 month to avoid division by zero
+    (when (< total-months 1)
+      (setq total-months 1))
 
     ;; Sort by amount (descending)
     (setq categories (sort categories (lambda (a b) (> (cdr a) (cdr b)))))
@@ -428,40 +458,98 @@ This function runs in a separate process via async.el."
     (insert "\n* Top Spending Categories\n\n")
     (if (and categories (> total-spending 0))
         (let ((counter 1))
+          ;; First show the averages in a summary section
+          (insert "** Summary\n\n")
+          (insert (format "- *Total spending:* £%.2f\n" total-spending))
+          (insert (format "- *Monthly average (all categories):* £%.2f\n" 
+                         (/ total-spending (float total-months))))
+          (insert (format "- *Yearly average (all categories):* £%.2f\n\n" 
+                         (* 12 (/ total-spending (float total-months)))))
+          
+          ;; Then show the breakdown by category
+          (insert "** Category Breakdown\n\n")
           (dolist (cat categories)
             (when (<= counter 10) ;; Only show top 10
-              (let ((cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
+              (let* ((cat-name (cdr (assoc (car cat) bank-buddy-category-names)))
+                     (amount (cdr cat))
+                     (monthly-avg (/ amount (float total-months)))
+                     (yearly-avg (* 12 monthly-avg)))
                 (insert (format "%d. *%s:* £%.2f (%.1f%%)\n"
                                 counter
                                 (or cat-name (car cat))
-                                (cdr cat)
-                                (* 100.0 (/ (cdr cat) total-spending)))))
+                                amount
+                                (* 100.0 (/ amount total-spending))))
+                (insert (format "   - Monthly avg: £%.2f, Yearly avg: £%.2f\n"
+                               monthly-avg yearly-avg)))
               (setq counter (1+ counter)))))
       (insert "No category spending data available.\n"))))
 
 (defun bank-buddy-generate-top-merchants ()
-  "Generate top merchants section."
-  (let ((merchants-list '()))
+  "Generate top merchants section with monthly and yearly averages."
+  (let ((merchants-list '())
+        (total-spending 0)
+        (total-months 0)
+        (first-month nil)
+        (last-month nil))
 
     ;; Convert hash to list for sorting
-    (maphash (lambda (k v) (push (cons k v) merchants-list))
+    (maphash (lambda (k v) 
+               (push (cons k v) merchants-list)
+               (setq total-spending (+ total-spending v)))
              bank-buddy-merchants)
+
+    ;; Calculate number of months from the monthly-totals hash
+    (setq total-months (hash-table-count bank-buddy-monthly-totals))
+    
+    ;; If no months data in the hash, try to extract from date range
+    (when (and (= total-months 0) bank-buddy-date-first bank-buddy-date-last)
+      (let* ((first-parts (split-string bank-buddy-date-first "-"))
+             (last-parts (split-string bank-buddy-date-last "-"))
+             (first-year (string-to-number (nth 0 first-parts)))
+             (first-month-num (string-to-number (nth 1 first-parts)))
+             (last-year (string-to-number (nth 0 last-parts)))
+             (last-month-num (string-to-number (nth 1 last-parts))))
+        (when (and (>= (length first-parts) 2) (>= (length last-parts) 2))
+          (setq total-months (+ (* 12 (- last-year first-year))
+                                (- last-month-num first-month-num)
+                                1))))) ; +1 because we include both first and last month
+    
+    ;; Fallback if we still don't have a valid month count
+    (when (or (< total-months 1) (not (numberp total-months)))
+      (setq total-months 1))
 
     ;; Sort by amount (descending)
     (setq merchants-list (sort merchants-list (lambda (a b) (> (cdr a) (cdr b)))))
 
     (insert "\n* Top 10 Merchants\n\n")
     (if merchants-list
-        (let ((counter 1))
-          (dolist (merchant merchants-list)
-            (when (<= counter 10) ;; Only show top 10
-              (insert (format "%d. *%s:* £%.2f\n"
-                              counter
-                              (car merchant)
-                              (cdr merchant)))
-              (setq counter (1+ counter)))))
+        (progn
+          ;; Add a summary section with overall totals
+          (insert "** Summary\n\n")
+          (insert (format "- *Total merchant spending:* £%.2f\n" total-spending))
+          (insert (format "- *Monthly average (all merchants):* £%.2f\n" 
+                         (/ total-spending (float total-months))))
+          (insert (format "- *Yearly average (all merchants):* £%.2f\n\n" 
+                         (* 12 (/ total-spending (float total-months)))))
+          
+          ;; Detailed merchant breakdown
+          (insert "** Merchant Breakdown\n\n")
+          (let ((counter 1))
+            (dolist (merchant merchants-list)
+              (when (<= counter 10) ;; Only show top 10
+                (let* ((amount (cdr merchant))
+                       (monthly-avg (/ amount (float total-months)))
+                       (yearly-avg (* 12 monthly-avg))
+                       (percent (* 100.0 (/ amount total-spending))))
+                  (insert (format "%d. *%s:* £%.2f (%.1f%%)\n"
+                                  counter
+                                  (car merchant)
+                                  amount
+                                  percent))
+                  (insert (format "   - Monthly avg: £%.2f, Yearly avg: £%.2f\n"
+                                 monthly-avg yearly-avg)))
+                (setq counter (1+ counter))))))
       (insert "No merchant spending data available.\n"))))
-
 
 (defun bank-buddy-generate-monthly-spending ()
   "Generate monthly spending patterns section."
