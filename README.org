@@ -6,7 +6,7 @@
 #+todo: TODO DOING | DONE
 #+startup: showall
 
-*Note: <2025-04-05> a first upload, probably won't initially work too well!!*
+*NOTE: THIS IS ALPHA SOFTWARE SO MAY BE A BIT ROUGH AROUND THE EDGES!*
 
 * Bank-Buddy: Your Financial Analysis Companion for Emacs
 
@@ -84,14 +84,39 @@ The package expects a CSV file with these columns:
 2. Transaction description
 3. Debit amount
 
-* Roadmap
+* Roadmap                                                           :roadmap:
 
-1. *Data Visualization* - Add interactive charts and graphs using Org-babel
-2. *Budget Tracking* - Compare spending against budgeted amounts
-3. *Custom Category Mapping* - Allow user-defined categories
-4. *Multi-Account Support* - Handle transactions from multiple accounts
-5. *Export Formats* - Add PDF and HTML export options
-6. *AI-Powered Categorization* - Use ML to improve categorization accuracy
+#+begin_src emacs-lisp :results table :exports results :tangle no
+(my/kanban-to-table "roadmap" "issues")
+#+end_src
+
+#+RESULTS:
+| TODO                      | DOING              |
+|---------------------------+--------------------|
+| Budget Tracking           | Data Visualization |
+| Custom Category Mapping   |                    |
+| AI-Powered Categorization |                    |
+
+** TODO Generate test data and unit test
+
+** TODO Asynchronous operation
+The report especially on a thousand line csv can take some seconds
+
+** DOING Data Visualization
+
+Add interactive charts and graphs using Org-babel
+
+** TODO Budget Tracking
+
+Compare spending against budgeted amounts
+
+** TODO Custom Category Mapping
+
+Allow user-defined categories
+
+** TODO AI-Powered Categorization
+
+Use LLM to improve categorization accuracy
    
 * Contributing
 
