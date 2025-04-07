@@ -1,7 +1,8 @@
 #+title: Financial Report (Bank Buddy)
 #+subtitle: Data from bank-statement.csv
-#+date: 2025-04-07 08:59:19
+#+date: 2025-04-07 09:46:03
 #+options: toc:2 num:nil
+#+startup: inlineimages showall
 
 * Summary Overview
 
@@ -168,7 +169,7 @@ This plot shows your spending over time.
 | 2025-03 | 6277.77 |
 
 
-#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :results file
+#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :execute_on_open t :results file
 set terminal png size 800,600
 set style data histogram
 set style fill solid
@@ -202,7 +203,7 @@ plot data using 2:xtic(1) with boxes title "Amount"
 | Phone | 2720.74 |
 
 
-#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :results file
+#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file
 set terminal png size 800,600
 set style data histogram
 set style fill solid
@@ -230,7 +231,7 @@ plot data using 2:xtic(1) with boxes title "Amount"
 | Over £100     | 255 |
 
 
-#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :results file
+#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :execute_on_open t :results file
 set terminal png size 800,600
 set style data histogram
 set style fill solid
@@ -297,7 +298,7 @@ Estimated total cost per month based on detected recurring payments active durin
 | 2025-03 | 63.46 |
 
 
-#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :results file
+#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :execute_on_open t :results file
 set terminal png size 800,600
 set style data histogram
 set style fill solid
