@@ -265,11 +265,11 @@ This function runs in a separate process via async.el."
                                      (cdr (nth 0 payment)))
                                    payments)))
                 (when dates ; Ensure dates list is not empty
-                   (condition-case date-err ; Handle potential errors in date parsing/sorting
-                       (progn
-                         (setq date-first (car (sort (copy-sequence dates) #'string<)))
-                         (setq date-last (car (sort (copy-sequence dates) #'string>))))
-                     (error (setq error-occurred (format "Error calculating date range: %S" date-err)))))))
+                  (condition-case date-err ; Handle potential errors in date parsing/sorting
+                      (progn
+                        (setq date-first (car (sort (copy-sequence dates) #'string<)))
+                        (setq date-last (car (sort (copy-sequence dates) #'string>))))
+                    (error (setq error-occurred (format "Error calculating date range: %S" date-err)))))))
 
             ;; --- 2b. Process Payments loop ---
             (when (and payments (not error-occurred))
@@ -462,12 +462,12 @@ This function runs in a separate process via async.el."
 
           ;; Track highest and lowest
           (when (> amount 0) ; Only consider months with spending
-             (if (or (not highest-amount) (> amount highest-amount))
-                 (setq highest-month month
-                       highest-amount amount))
-             (if (or (not lowest-amount) (< amount lowest-amount))
-                 (setq lowest-month month
-                       lowest-amount amount))))))
+            (if (or (not highest-amount) (> amount highest-amount))
+                (setq highest-month month
+                      highest-amount amount))
+            (if (or (not lowest-amount) (< amount lowest-amount))
+                (setq lowest-month month
+                      lowest-amount amount))))))
 
     (insert "\n* Monthly Spending Patterns\n\n")
     (if (> month-count 0)
@@ -490,7 +490,7 @@ This function runs in a separate process via async.el."
           ;; Sort the list representation for output
           (setq months-list (sort months-list (lambda (a b) (string< (car a) (car b)))))
           (dolist (month-data months-list)
-             (insert (format "%s: £%.2f\n" (car month-data) (cdr month-data))))
+            (insert (format "%s: £%.2f\n" (car month-data) (cdr month-data))))
 
           (insert "#+end_src\n"))
       (insert "No monthly spending data available.\n"))))
@@ -512,7 +512,7 @@ This function runs in a separate process via async.el."
                 (amount (if (string-match-p "^[0-9.]+$" amount-str) (string-to-number amount-str) 0))
                 (frequencies (bank-buddy-analyze-subscription-frequency occurrences)))
            (when (> amount 0) ; Only add if amount is valid
-               (push (list sub-name amount frequencies) subscriptions)))))
+             (push (list sub-name amount frequencies) subscriptions)))))
      bank-buddy-subs)
 
     ;; Sort by amount (descending)
@@ -540,19 +540,19 @@ This function runs in a separate process via async.el."
           (dolist (sub subscriptions)
             ;; Limit displayed subscriptions for brevity if needed
             ;; (when (<= counter 15)
-              (let* ((name (nth 0 sub))
-                     (amount (nth 1 sub))
-                     (freq (nth 2 sub))
-                     (frequency-text
-                      (cond
-                       ((string= freq "monthly") (format "£%.2f/month" amount))
-                       ((string= freq "bi-weekly") (format "£%.2f/bi-weekly (approx £%.2f/month)" amount (* 2 amount)))
-                       ((string= freq "weekly") (format "£%.2f/week (approx £%.2f/month)" amount (* 4 amount)))
-                       ((string= freq "annual") (format "£%.2f/year (approx £%.2f/month)" amount (/ amount 12.0)))
-                       (t (format "£%.2f (irregular/unknown frequency)" amount)))))
-                (insert (format "%d. *%s:* %s\n" counter name frequency-text))
-                (setq counter (1+ counter)))) ;;) ; Uncomment closing parens if limit uncommented
-            )
+            (let* ((name (nth 0 sub))
+                   (amount (nth 1 sub))
+                   (freq (nth 2 sub))
+                   (frequency-text
+                    (cond
+                     ((string= freq "monthly") (format "£%.2f/month" amount))
+                     ((string= freq "bi-weekly") (format "£%.2f/bi-weekly (approx £%.2f/month)" amount (* 2 amount)))
+                     ((string= freq "weekly") (format "£%.2f/week (approx £%.2f/month)" amount (* 4 amount)))
+                     ((string= freq "annual") (format "£%.2f/year (approx £%.2f/month)" amount (/ amount 12.0)))
+                     (t (format "£%.2f (irregular/unknown frequency)" amount)))))
+              (insert (format "%d. *%s:* %s\n" counter name frequency-text))
+              (setq counter (1+ counter)))) ;;) ; Uncomment closing parens if limit uncommented
+          )
       (insert "No potential recurring subscriptions detected meeting the criteria.\n"))))
 
 (defun bank-buddy-analyze-subscription-frequency (occurrences)
@@ -566,15 +566,15 @@ This function runs in a separate process via async.el."
     ;; Calculate intervals between occurrences (in days)
     (dolist (occurrence sorted-occurrences)
       (let ((current-date (car occurrence)))
-         (when (and prev-date
+        (when (and prev-date
                    (string-match-p "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}$" current-date)
                    (string-match-p "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}$" prev-date))
-           (condition-case nil ; Ignore errors from date parsing if format is odd
-               (let ((days (bank-buddy-days-between prev-date current-date)))
-                 (when (> days 0) ; Ignore same-day duplicates
-                   (push days intervals)))
-             (error nil))) ; Skip interval calculation on error
-         (setq prev-date current-date))) ; Update previous date
+          (condition-case nil ; Ignore errors from date parsing if format is odd
+              (let ((days (bank-buddy-days-between prev-date current-date)))
+                (when (> days 0) ; Ignore same-day duplicates
+                  (push days intervals)))
+            (error nil))) ; Skip interval calculation on error
+        (setq prev-date current-date))) ; Update previous date
 
     ;; Determine likely frequency pattern based on average interval +/- tolerance
     (if (< (length intervals) 2) ; Need at least 2 intervals (3 occurrences) for good guess
@@ -594,173 +594,173 @@ This function runs in a separate process via async.el."
 
 
 (defun bank-buddy-generate-plots ()
- "Generate org-plot visualizations of financial data."
- (insert "\n* Data Visualizations\n\n")
- (require 'org-plot) ; Ensure org-plot is loaded
+  "Generate org-plot visualizations of financial data."
+  (insert "\n* Data Visualizations\n\n")
+  (require 'org-plot) ; Ensure org-plot is loaded
 
- ;; Monthly spending plot
- (insert "** Monthly Spending Trend\n\n")
- (insert "This plot shows your spending over time.\n\n")
- (insert "#+PLOT: title:\"Monthly Spending Trend\" ind:1 deps:(2) type:2d with:linespoints set:\"grid\" set:\"ylabel 'Spending (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
- (insert "#+NAME: monthly-spending-trend\n")
- 
- (insert "| Month    | Spending |\n")
- (insert "|----------+----------|\n")
- (let ((month-list '()))
-   (maphash (lambda (month amount) (push (cons month amount) month-list)) bank-buddy-monthly-totals)
-   (setq month-list (sort month-list (lambda (a b) (string< (car a) (car b)))))
-   (if month-list
-       (dolist (month-data month-list)
-         (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
-     (insert "| No Data  | 0.00     |\n")))
- (insert "\n\n")
+  ;; Monthly spending plot
+  (insert "** Monthly Spending Trend\n\n")
+  (insert "This plot shows your spending over time.\n\n")
+  (insert "#+PLOT: title:\"Monthly Spending Trend\" ind:1 deps:(2) type:2d with:linespoints set:\"grid\" set:\"ylabel 'Spending (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
+  (insert "#+NAME: monthly-spending-trend\n")
+  
+  (insert "| Month    | Spending |\n")
+  (insert "|----------+----------|\n")
+  (let ((month-list '()))
+    (maphash (lambda (month amount) (push (cons month amount) month-list)) bank-buddy-monthly-totals)
+    (setq month-list (sort month-list (lambda (a b) (string< (car a) (car b)))))
+    (if month-list
+        (dolist (month-data month-list)
+          (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
+      (insert "| No Data  | 0.00     |\n")))
+  (insert "\n\n")
 
- (insert "#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :results file\n")
- (insert "set terminal png size 800,600\n")
- (insert "set style data histogram\n")
- (insert "set style fill solid\n")
- (insert "set boxwidth 0.8\n")
- (insert "set xtics rotate by -45\n")
- (insert "set ylabel \"Amount\"\n")
- (insert "set title \"Monthly Spending Trend\"\n")
- (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
- (insert "#+end_src\n\n\n")
- 
- (insert "#+ATTR_ORG: :width 600\n")
- (insert "#+RESULTS:\n")
- (insert "[[file:financial-report--monthly-spending-trend.png]]\n\n")
- 
- ;; Spending by category plot
- (insert "** Top Spending Categories (Histogram)\n\n")
- (insert "#+PLOT: title:\"Top Spending Categories\" ind:1 deps:(2) type:histogram with:histograms set:\"style fill solid 0.8\" set:\"grid\" set:\"ylabel 'Amount (£)'\" set:\"xtic(1)\" set:\"xtics rotate by -45\"\n")
- (insert "#+NAME: top-spending-categories\n")
- (insert "| Category        | Amount |\n")
- (insert "|-----------------+--------|\n")
- (let ((categories '()) (total-spending 0))
-   (maphash (lambda (key value)
-              (let* ((parts (split-string key "-"))
-                     (category (if (> (length parts) 2) (nth (1- (length parts)) parts) "unknown"))
-                     (existing (assoc category categories)))
-                (if existing (setcdr existing (+ (cdr existing) value)) (push (cons category value) categories))))
-            bank-buddy-cat-tot)
-   (setq categories (sort categories (lambda (a b) (> (cdr a) (cdr b)))))
-   (if categories
-       (dotimes (i (min 10 (length categories)))
-         (let* ((cat (nth i categories))
-                (cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
-           (insert (format "| %s | %.2f |\n" (or cat-name (car cat)) (cdr cat)))))
-     (insert "| No Data         | 0.00   |\n")))
- (insert "\n\n")
+  (insert "#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :execute_on_open t :results file\n")
+  (insert "set terminal png size 800,600\n")
+  (insert "set style data histogram\n")
+  (insert "set style fill solid\n")
+  (insert "set boxwidth 0.8\n")
+  (insert "set xtics rotate by -45\n")
+  (insert "set ylabel \"Amount\"\n")
+  (insert "set title \"Monthly Spending Trend\"\n")
+  (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+  (insert "#+end_src\n\n\n")
+  
+  (insert "#+ATTR_ORG: :width 600\n")
+  (insert "#+RESULTS:\n")
+  (insert "[[file:financial-report--monthly-spending-trend.png]]\n\n")
+  
+  ;; Spending by category plot
+  (insert "** Top Spending Categories (Histogram)\n\n")
+  (insert "#+PLOT: title:\"Top Spending Categories\" ind:1 deps:(2) type:histogram with:histograms set:\"style fill solid 0.8\" set:\"grid\" set:\"ylabel 'Amount (£)'\" set:\"xtic(1)\" set:\"xtics rotate by -45\"\n")
+  (insert "#+NAME: top-spending-categories\n")
+  (insert "| Category        | Amount |\n")
+  (insert "|-----------------+--------|\n")
+  (let ((categories '()) (total-spending 0))
+    (maphash (lambda (key value)
+               (let* ((parts (split-string key "-"))
+                      (category (if (> (length parts) 2) (nth (1- (length parts)) parts) "unknown"))
+                      (existing (assoc category categories)))
+                 (if existing (setcdr existing (+ (cdr existing) value)) (push (cons category value) categories))))
+             bank-buddy-cat-tot)
+    (setq categories (sort categories (lambda (a b) (> (cdr a) (cdr b)))))
+    (if categories
+        (dotimes (i (min 10 (length categories)))
+          (let* ((cat (nth i categories))
+                 (cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
+            (insert (format "| %s | %.2f |\n" (or cat-name (car cat)) (cdr cat)))))
+      (insert "| No Data         | 0.00   |\n")))
+  (insert "\n\n")
 
- (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :results file\n")
- (insert "set terminal png size 800,600\n")
- (insert "set style data histogram\n")
- (insert "set style fill solid\n")
- (insert "set boxwidth 0.8\n")
- (insert "set xtics rotate by -45\n")
- (insert "set ylabel \"Amount\"\n")
- (insert "set title \"Top Spending Categories\"\n")
- (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
- (insert "#+end_src\n\n\n")
- 
- (insert "#+ATTR_ORG: :width 600\n")
- (insert "#+RESULTS:\n")
- (insert "[[file:financial-report--top-spending-categories.png]]\n\n")
+  (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file\n")
+  (insert "set terminal png size 800,600\n")
+  (insert "set style data histogram\n")
+  (insert "set style fill solid\n")
+  (insert "set boxwidth 0.8\n")
+  (insert "set xtics rotate by -45\n")
+  (insert "set ylabel \"Amount\"\n")
+  (insert "set title \"Top Spending Categories\"\n")
+  (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+  (insert "#+end_src\n\n\n")
+  
+  (insert "#+ATTR_ORG: :width 600\n")
+  (insert "#+RESULTS:\n")
+  (insert "[[file:financial-report--top-spending-categories.png]]\n\n")
 
   ;; Transaction size distribution plot
- (insert "** Transaction Size Distribution (Pie Chart)\n\n")
- (insert "#+PLOT: title:\"Transaction Size Distribution\" ind:1 deps:(2) type:pie with:labels\n")
- (insert "#+NAME: transaction-size-distribution\n")
- (insert "| Range         | Count |\n")
- (insert "|---------------+-------|\n")
- (let* ((under-10 (gethash "under-10" bank-buddy-txn-size-dist 0))
-        (to-50 (gethash "10-to-50" bank-buddy-txn-size-dist 0))
-        (to-100 (gethash "50-to-100" bank-buddy-txn-size-dist 0))
-        (over-100 (gethash "over-100" bank-buddy-txn-size-dist 0))
-        (total (+ under-10 to-50 to-100 over-100)))
-   (if (> total 0)
-       (progn
-         (insert (format "| Under £10     | %d |\n" under-10))
-         (insert (format "| £10 to £50    | %d |\n" to-50))
-         (insert (format "| £50 to £100   | %d |\n" to-100))
-         (insert (format "| Over £100     | %d |\n" over-100)))
-     (insert "| No Data       | 0     |\n")))
- (insert "\n\n")
+  (insert "** Transaction Size Distribution (Pie Chart)\n\n")
+  (insert "#+PLOT: title:\"Transaction Size Distribution\" ind:1 deps:(2) type:pie with:labels\n")
+  (insert "#+NAME: transaction-size-distribution\n")
+  (insert "| Range         | Count |\n")
+  (insert "|---------------+-------|\n")
+  (let* ((under-10 (gethash "under-10" bank-buddy-txn-size-dist 0))
+         (to-50 (gethash "10-to-50" bank-buddy-txn-size-dist 0))
+         (to-100 (gethash "50-to-100" bank-buddy-txn-size-dist 0))
+         (over-100 (gethash "over-100" bank-buddy-txn-size-dist 0))
+         (total (+ under-10 to-50 to-100 over-100)))
+    (if (> total 0)
+        (progn
+          (insert (format "| Under £10     | %d |\n" under-10))
+          (insert (format "| £10 to £50    | %d |\n" to-50))
+          (insert (format "| £50 to £100   | %d |\n" to-100))
+          (insert (format "| Over £100     | %d |\n" over-100)))
+      (insert "| No Data       | 0     |\n")))
+  (insert "\n\n")
 
- (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :results file\n")
- (insert "set terminal png size 800,600\n")
- (insert "set style data histogram\n")
- (insert "set style fill solid\n")
- (insert "set boxwidth 0.8\n")
- (insert "set xtics rotate by -45\n")
- (insert "set ylabel \"Amount\"\n")
- (insert "set title \"Transaction Size Distribution\"\n")
- (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
- (insert "#+end_src\n\n\n")
- 
- (insert "#+ATTR_ORG: :width 600\n")
- (insert "#+RESULTS:\n")
- (insert "[[file:financial-report--transaction-size-distribution.png]]\n\n")
- 
- ;; Subscription costs plot (Simplified - plotting actual occurrences might be better but complex)
- ;; Let's plot the estimated monthly cost based on detected subs
- (insert "** Estimated Monthly Subscription Cost Trend\n\n")
- (insert "Estimated total cost per month based on detected recurring payments active during that month.\n\n")
- (insert "#+PLOT: title:\"Estimated Monthly Subscription Costs\" ind:1 deps:(2) type:2d with:linespoints set:\"grid\" set:\"ylabel 'Estimated Cost (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
- (insert "#+NAME: monthly-subscription-costs\n")
- (insert "| Month    | Est. Cost |\n")
- (insert "|----------+-----------|\n")
- (let ((monthly-costs (make-hash-table :test 'equal)))
-   ;; Iterate through all detected subs and their occurrences
-   (maphash
-    (lambda (key occurrences)
-      (when (>= (length occurrences) bank-buddy-subscription-min-occurrences)
-        (let* ((parts (split-string key "-"))
-               (amount-str (car (last parts)))
-               (amount (if (string-match-p "^[0-9.]+$" amount-str) (string-to-number amount-str) 0))
-               (freq (bank-buddy-analyze-subscription-frequency occurrences))
-               (monthly-equiv-cost
-                (cond ((string= freq "monthly") amount)
-                      ((string= freq "bi-weekly") (* amount 2.0))
-                      ((string= freq "weekly") (* amount 4.0)) ; Approximation
-                      ((string= freq "annual") (/ amount 12.0))
-                      (t 0.0)))) ; Ignore irregular/unknown for monthly plot
-          (when (> monthly-equiv-cost 0)
-            (dolist (occurrence occurrences)
-              (let* ((date (car occurrence))
-                     (month (if (and date (>= (length date) 7)) (substring date 0 7) nil)))
-                (when month
-                  (puthash month (+ (gethash month monthly-costs 0.0) monthly-equiv-cost) monthly-costs))))))))
+  (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :execute_on_open t :results file\n")
+  (insert "set terminal png size 800,600\n")
+  (insert "set style data histogram\n")
+  (insert "set style fill solid\n")
+  (insert "set boxwidth 0.8\n")
+  (insert "set xtics rotate by -45\n")
+  (insert "set ylabel \"Amount\"\n")
+  (insert "set title \"Transaction Size Distribution\"\n")
+  (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+  (insert "#+end_src\n\n\n")
+  
+  (insert "#+ATTR_ORG: :width 600\n")
+  (insert "#+RESULTS:\n")
+  (insert "[[file:financial-report--transaction-size-distribution.png]]\n\n")
+  
+  ;; Subscription costs plot (Simplified - plotting actual occurrences might be better but complex)
+  ;; Let's plot the estimated monthly cost based on detected subs
+  (insert "** Estimated Monthly Subscription Cost Trend\n\n")
+  (insert "Estimated total cost per month based on detected recurring payments active during that month.\n\n")
+  (insert "#+PLOT: title:\"Estimated Monthly Subscription Costs\" ind:1 deps:(2) type:2d with:linespoints set:\"grid\" set:\"ylabel 'Estimated Cost (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
+  (insert "#+NAME: monthly-subscription-costs\n")
+  (insert "| Month    | Est. Cost |\n")
+  (insert "|----------+-----------|\n")
+  (let ((monthly-costs (make-hash-table :test 'equal)))
+    ;; Iterate through all detected subs and their occurrences
+    (maphash
+     (lambda (key occurrences)
+       (when (>= (length occurrences) bank-buddy-subscription-min-occurrences)
+         (let* ((parts (split-string key "-"))
+                (amount-str (car (last parts)))
+                (amount (if (string-match-p "^[0-9.]+$" amount-str) (string-to-number amount-str) 0))
+                (freq (bank-buddy-analyze-subscription-frequency occurrences))
+                (monthly-equiv-cost
+                 (cond ((string= freq "monthly") amount)
+                       ((string= freq "bi-weekly") (* amount 2.0))
+                       ((string= freq "weekly") (* amount 4.0)) ; Approximation
+                       ((string= freq "annual") (/ amount 12.0))
+                       (t 0.0)))) ; Ignore irregular/unknown for monthly plot
+           (when (> monthly-equiv-cost 0)
+             (dolist (occurrence occurrences)
+               (let* ((date (car occurrence))
+                      (month (if (and date (>= (length date) 7)) (substring date 0 7) nil)))
+                 (when month
+                   (puthash month (+ (gethash month monthly-costs 0.0) monthly-equiv-cost) monthly-costs))))))))
      bank-buddy-subs)
 
-   ;; Generate table rows
-   (let ((month-list '()))
-     (maphash (lambda (month cost) (push (cons month cost) month-list)) monthly-costs)
-     (setq month-list (sort month-list (lambda (a b) (string< (car a) (car b)))))
-     (if month-list
-         (dolist (month-data month-list)
-           (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
-       (insert "| No Data  | 0.00      |\n"))) )
- (insert "\n\n")
+    ;; Generate table rows
+    (let ((month-list '()))
+      (maphash (lambda (month cost) (push (cons month cost) month-list)) monthly-costs)
+      (setq month-list (sort month-list (lambda (a b) (string< (car a) (car b)))))
+      (if month-list
+          (dolist (month-data month-list)
+            (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
+        (insert "| No Data  | 0.00      |\n"))) )
+  (insert "\n\n")
 
-  (insert "#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :results file\n")
- (insert "set terminal png size 800,600\n")
- (insert "set style data histogram\n")
- (insert "set style fill solid\n")
- (insert "set boxwidth 0.8\n")
- (insert "set xtics rotate by -45\n")
- (insert "set ylabel \"Amount\"\n")
- (insert "set title \"Monthly Subscription Costs\"\n")
- (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
- (insert "#+end_src\n\n\n")
- 
- (insert "#+ATTR_ORG: :width 600\n")
- (insert "#+RESULTS:\n")
- (insert "[[file:financial-report--monthly-subscription-costs.png]]\n\n")
+  (insert "#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :execute_on_open t :results file\n")
+  (insert "set terminal png size 800,600\n")
+  (insert "set style data histogram\n")
+  (insert "set style fill solid\n")
+  (insert "set boxwidth 0.8\n")
+  (insert "set xtics rotate by -45\n")
+  (insert "set ylabel \"Amount\"\n")
+  (insert "set title \"Monthly Subscription Costs\"\n")
+  (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+  (insert "#+end_src\n\n\n")
+  
+  (insert "#+ATTR_ORG: :width 600\n")
+  (insert "#+RESULTS:\n")
+  (insert "[[file:financial-report--monthly-subscription-costs.png]]\n\n")
 
 
 
- )
+  )
 
 
 ;; --- Main Entry Point ---
@@ -797,8 +797,8 @@ This function runs in a separate process via async.el."
       
       ;; Load the bank-buddy package
       (let ((bank-buddy-file ,(or load-file-name 
-                                 (locate-library "bank-buddy")
-                                 (buffer-file-name))))
+                                  (locate-library "bank-buddy")
+                                  (buffer-file-name))))
         (when bank-buddy-file
           (load-file bank-buddy-file))
         
@@ -816,8 +816,8 @@ This function runs in a separate process via async.el."
             (plist-put worker-result :csv-file ,csv-file)
             (plist-put worker-result :output-file ,output-file)
             worker-result))))
-      
-      ;; (bank-buddy-show-progress "CSV parsing complete." t))
+   
+   ;; (bank-buddy-show-progress "CSV parsing complete." t))
 
    ;; The callback function that uses file paths from the result
    (lambda (result)
@@ -868,7 +868,8 @@ This function runs in a separate process via async.el."
              (insert "#+title: Financial Report (Bank Buddy)\n")
              (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
              (insert (format "#+date: %s\n" (format-time-string "%Y-%m-%d %H:%M:%S")))
-             (insert "#+options: toc:2 num:nil\n\n")
+             (insert "#+options: toc:2 num:nil\n")
+             (insert "#+startup: inlineimages showall\n\n")
              (bank-buddy-generate-summary-overview)
              (bank-buddy-generate-transaction-size-distribution)
              (bank-buddy-generate-top-spending-categories)
