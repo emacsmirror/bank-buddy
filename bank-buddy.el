@@ -30,6 +30,9 @@
 (require 'cl-lib)
 (require 'async) ;; Require the async library
 
+(defvar bank-buddy-unmatched-transactions '()
+  "List of transactions that matched only the catch-all pattern.")
+
 ;; Variables and data structures (remain global for report generation)
 (defvar bank-buddy-payments '()
   "List of parsed payment transactions. Populated by async callback.")
@@ -146,6 +149,20 @@
     ("APPLE.*ONE" . "Apple One"))
   "Patterns to identify specific subscriptions.")
 
+(defun bank-buddy-generate-unmatched-transactions ()
+  "Generate a section showing transactions that weren't matched by specific patterns."
+  (insert "\n* Unmatched Transactions\n\n")
+  (insert "The following transactions were only matched by the catch-all pattern (\".*\"). ")
+  (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`.\n\n")
+  
+  (if bank-buddy-unmatched-transactions
+      (progn
+        (insert "#+begin_src text\n")
+        (dolist (txn (sort bank-buddy-unmatched-transactions #'string<))
+          (insert (format "%s\n" txn)))
+        (insert "#+end_src\n"))
+    (insert "All transactions were matched by specific patterns.\n")))
+
 (defun bank-buddy-show-progress (message &optional append)
   "Show progress MESSAGE in a dedicated buffer.
 If APPEND is non-nil, append to existing content."
@@ -169,23 +186,29 @@ If APPEND is non-nil, append to existing content."
         (time2 (date-to-time date2)))
     (floor (/ (float-time (time-subtract time2 time1)) 86400))))
 
-;; --- Functions Modified/Added for Asynchronicity ---
-
-;; Helper for the async worker: Categorizes payment and updates *local* hash tables.
-;; Note the added hash table arguments.
 (defun bank-buddy--categorize-payment-local (name debit month date cat-tot merchants monthly-totals txn-size-dist subs)
   "Categorize payment based on NAME, DEBIT amount, MONTH and DATE, updating local hash tables."
   (let ((category-found nil)
         (split-key nil)
-        (merchant (replace-regexp-in-string " .*" "" name)))
+        (merchant (replace-regexp-in-string " .*" "" name))
+        (unmatched t)) ; New flag to track if transaction matched only catch-all
 
     ;; Find category (uses global bank-buddy-cat-list-defines read by the child process)
     (cl-loop for category in bank-buddy-cat-list-defines
              when (string-match-p (nth 0 category) name)
-             do (setq category-found (nth 1 category))
+             do (progn
+                  (setq category-found (nth 1 category))
+                  ;; If it's not the catch-all pattern ".*", mark as matched
+                  (when (not (string= (nth 0 category) ".*"))
+                    (setq unmatched nil)))
              and return t)
     (unless category-found (setq category-found "o")) ; Ensure a category
 
+    ;; If transaction is unmatched (only matched by ".*"), add to local list
+    (when unmatched
+      (push name bank-buddy-unmatched-transactions-local))
+
+    ;; Rest of the function remains unchanged
     ;; Update category totals (local hash)
     (setq split-key (concat month "-" category-found))
     (puthash split-key
@@ -225,7 +248,6 @@ If APPEND is non-nil, append to existing content."
     ;; Return the assigned category (though not strictly needed by caller in async context)
     category-found))
 
-
 ;; The core worker function to be run asynchronously.
 (defun bank-buddy--process-csv-async-worker (csv-file)
   "Parse CSV-FILE and process payments. Returns processed data as a list.
@@ -243,6 +265,7 @@ This function runs in a separate process via async.el."
         (monthly-totals (make-hash-table :test 'equal))
         (txn-size-dist (make-hash-table :test 'equal))
         (subs (make-hash-table :test 'equal))
+        (bank-buddy-unmatched-transactions-local '()) ; New local list for unmatched transactions
         (date-first nil)
         (date-last nil)
         (error-occurred nil))
@@ -301,7 +324,7 @@ This function runs in a separate process via async.el."
 
 
     ;; Return all the results needed for report generation as a list.
-    ;; Include error status.
+    ;; Include error status and unmatched transactions.
     (list :error error-occurred ; nil if no error
           :date-first date-first
           :date-last date-last
@@ -310,8 +333,7 @@ This function runs in a separate process via async.el."
           :monthly-totals monthly-totals
           :txn-size-dist txn-size-dist
           :subs subs
-          ;; Optionally return raw payments if needed later, but might be large
-          ;; :payments payments
+          :unmatched-transactions bank-buddy-unmatched-transactions-local
           )))
 
 ;; --- Reporting Functions (remain largely the same, operate on global vars) ---
@@ -817,12 +839,8 @@ This function runs in a separate process via async.el."
             (plist-put worker-result :output-file ,output-file)
             worker-result))))
    
-   ;; (bank-buddy-show-progress "CSV parsing complete." t))
-
    ;; The callback function that uses file paths from the result
    (lambda (result)
-     ;; (bank-buddy-show-progress "Analyzing transactions..." t)
-
      ;; Extract file paths from the result
      (let ((csv-file (plist-get result :csv-file))
            (output-file (plist-get result :output-file))
@@ -844,6 +862,7 @@ This function runs in a separate process via async.el."
            (clrhash bank-buddy-monthly-totals)
            (clrhash bank-buddy-txn-size-dist)
            (clrhash bank-buddy-subs)
+           (setq bank-buddy-unmatched-transactions '()) ; Clear previous unmatched list
            
            (setq bank-buddy-date-first nil)
            (setq bank-buddy-date-last nil)
@@ -861,8 +880,11 @@ This function runs in a separate process via async.el."
              (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
-           ;; Generate the report content in a temp buffer
+             
+           ;; Get the unmatched transactions list
+           (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
            
+           ;; Generate the report content in a temp buffer
            (with-temp-buffer
              (org-mode)
              (insert "#+title: Financial Report (Bank Buddy)\n")
@@ -876,6 +898,7 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-monthly-spending)
              (bank-buddy-generate-subscriptions)
+             (bank-buddy-generate-unmatched-transactions) ; Add the new section
              (bank-buddy-generate-plots)
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
@@ -884,6 +907,32 @@ This function runs in a separate process via async.el."
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
              (find-file output-file)))))))
   )
+
+(defun bank-buddy-view-unmatched-transactions ()
+  "View the list of transactions that weren't matched by specific patterns."
+  (interactive)
+  (if (not bank-buddy-unmatched-transactions)
+      (message "No unmatched transactions available. Generate a report first.")
+    (with-current-buffer (get-buffer-create "*Bank Buddy Unmatched*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (org-mode)
+        (insert "* Unmatched Transactions\n\n")
+        (insert "The following transactions were only matched by the catch-all pattern (\".*\").\n")
+        (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`.\n\n")
+        (insert "Copy these to use for your regex development:\n\n")
+        (insert "#+begin_src elisp\n")
+        (insert ";; Add these patterns to bank-buddy-cat-list-defines\n")
+        (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
+          (insert (format "(\"%s\" \"CATEGORY\") ;; Replace CATEGORY with appropriate code\n" txn)))
+        (insert "#+end_src\n\n")
+        (insert "Raw transaction names for reference:\n\n")
+        (insert "#+begin_src text\n")
+        (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
+          (insert (format "%s\n" txn)))
+        (insert "#+end_src\n"))
+      (goto-char (point-min))
+      (display-buffer (current-buffer)))))
 
 ;; Utility function for development/debugging (no change needed)
 (defun bank-buddy-debug-info ()
