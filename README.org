@@ -28,17 +28,21 @@ Bank-buddy helps you analyze your banking transactions by automatically categori
 To potentially regenerate gnuplots
 
 #+begin_src elisp
-  (require 'ob-gnuplot)
+(require 'ob-gnuplot)
 
-  (defun my-org-babel-execute-on-open ()
-    (when (eq major-mode 'org-mode)
-      (org-babel-map-executables nil
-        (when (org-babel-get-src-block-info)
-          (let ((execute-on-open (cdr (assq :execute_on_open (nth 2 (org-babel-get-src-block-info))))))
-            (when execute-on-open
-              (org-babel-execute-src-block)))))))
-  
-    (add-hook 'org-mode-hook 'my-org-babel-execute-on-open)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((gnuplot . t)))
+
+(defun my-org-babel-execute-on-open ()
+  (when (eq major-mode 'org-mode)
+    (org-babel-map-executables nil
+      (when (org-babel-get-src-block-info)
+        (let ((execute-on-open (cdr (assq :execute_on_open (nth 2 (org-babel-get-src-block-info))))))
+          (when execute-on-open
+            (org-babel-execute-src-block)))))))
+
+(add-hook 'org-mode-hook 'my-org-babel-execute-on-open)
 #+end_src
 
 ** 2. Installation
@@ -110,20 +114,19 @@ The package expects a CSV file with these columns:
 #+end_src
 
 #+RESULTS:
-| TODO                                   | DOING              |
-|----------------------------------------+--------------------|
-| Better gnuplot autogeneration of plots | Data Visualization |
-| Generate test data and unit test       |                    |
-| Asynchronous operation                 |                    |
-| Budget Tracking                        |                    |
-| Custom Category Mapping                |                    |
-| AI-Powered Categorization              |                    |
+| TODO                                   | DOING              | DONE                   |
+|----------------------------------------+--------------------+------------------------|
+| Better gnuplot autogeneration of plots | Data Visualization | Asynchronous operation |
+| Generate test data and unit test       |                    |                        |
+| Budget Tracking                        |                    |                        |
+| Custom Category Mapping                |                    |                        |
+| AI-Powered Categorization              |                    |                        |
 
 ** TODO Better gnuplot autogeneration of plots
 
 ** TODO Generate test data and unit test
 
-** TODO Asynchronous operation
+** DONE Asynchronous operation
 The report especially on a thousand line csv can take some seconds
 
 ** DOING Data Visualization
