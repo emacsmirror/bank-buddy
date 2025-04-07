@@ -602,6 +602,8 @@ This function runs in a separate process via async.el."
  (insert "** Monthly Spending Trend\n\n")
  (insert "This plot shows your spending over time.\n\n")
  (insert "#+PLOT: title:\"Monthly Spending Trend\" ind:1 deps:(2) type:2d with:linespoints set:\"grid\" set:\"ylabel 'Spending (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
+ (insert "#+NAME: monthly-spending-trend\n")
+ 
  (insert "| Month    | Spending |\n")
  (insert "|----------+----------|\n")
  (let ((month-list '()))
@@ -613,9 +615,25 @@ This function runs in a separate process via async.el."
      (insert "| No Data  | 0.00     |\n")))
  (insert "\n\n")
 
+ (insert "#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :results file\n")
+ (insert "set terminal png size 800,600\n")
+ (insert "set style data histogram\n")
+ (insert "set style fill solid\n")
+ (insert "set boxwidth 0.8\n")
+ (insert "set xtics rotate by -45\n")
+ (insert "set ylabel \"Amount\"\n")
+ (insert "set title \"Monthly Spending Trend\"\n")
+ (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+ (insert "#+end_src\n\n\n")
+ 
+ (insert "#+ATTR_ORG: :width 600\n")
+ (insert "#+RESULTS:\n")
+ (insert "[[file:financial-report--monthly-spending-trend.png]]\n\n")
+ 
  ;; Spending by category plot
  (insert "** Top Spending Categories (Histogram)\n\n")
  (insert "#+PLOT: title:\"Top Spending Categories\" ind:1 deps:(2) type:histogram with:histograms set:\"style fill solid 0.8\" set:\"grid\" set:\"ylabel 'Amount (£)'\" set:\"xtic(1)\" set:\"xtics rotate by -45\"\n")
+ (insert "#+NAME: top-spending-categories\n")
  (insert "| Category        | Amount |\n")
  (insert "|-----------------+--------|\n")
  (let ((categories '()) (total-spending 0))
@@ -634,9 +652,25 @@ This function runs in a separate process via async.el."
      (insert "| No Data         | 0.00   |\n")))
  (insert "\n\n")
 
- ;; Transaction size distribution plot
+ (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :results file\n")
+ (insert "set terminal png size 800,600\n")
+ (insert "set style data histogram\n")
+ (insert "set style fill solid\n")
+ (insert "set boxwidth 0.8\n")
+ (insert "set xtics rotate by -45\n")
+ (insert "set ylabel \"Amount\"\n")
+ (insert "set title \"Top Spending Categories\"\n")
+ (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+ (insert "#+end_src\n\n\n")
+ 
+ (insert "#+ATTR_ORG: :width 600\n")
+ (insert "#+RESULTS:\n")
+ (insert "[[file:financial-report--top-spending-categories.png]]\n\n")
+
+  ;; Transaction size distribution plot
  (insert "** Transaction Size Distribution (Pie Chart)\n\n")
  (insert "#+PLOT: title:\"Transaction Size Distribution\" ind:1 deps:(2) type:pie with:labels\n")
+ (insert "#+NAME: transaction-size-distribution\n")
  (insert "| Range         | Count |\n")
  (insert "|---------------+-------|\n")
  (let* ((under-10 (gethash "under-10" bank-buddy-txn-size-dist 0))
@@ -653,11 +687,27 @@ This function runs in a separate process via async.el."
      (insert "| No Data       | 0     |\n")))
  (insert "\n\n")
 
+ (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :results file\n")
+ (insert "set terminal png size 800,600\n")
+ (insert "set style data histogram\n")
+ (insert "set style fill solid\n")
+ (insert "set boxwidth 0.8\n")
+ (insert "set xtics rotate by -45\n")
+ (insert "set ylabel \"Amount\"\n")
+ (insert "set title \"Transaction Size Distribution\"\n")
+ (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+ (insert "#+end_src\n\n\n")
+ 
+ (insert "#+ATTR_ORG: :width 600\n")
+ (insert "#+RESULTS:\n")
+ (insert "[[file:financial-report--transaction-size-distribution.png]]\n\n")
+ 
  ;; Subscription costs plot (Simplified - plotting actual occurrences might be better but complex)
  ;; Let's plot the estimated monthly cost based on detected subs
  (insert "** Estimated Monthly Subscription Cost Trend\n\n")
  (insert "Estimated total cost per month based on detected recurring payments active during that month.\n\n")
  (insert "#+PLOT: title:\"Estimated Monthly Subscription Costs\" ind:1 deps:(2) type:2d with:linespoints set:\"grid\" set:\"ylabel 'Estimated Cost (£)'\" set:\"xdata time\" set:\"timefmt '%Y-%m'\" set:\"format x '%b\\n%Y'\" set:\"xtics rotate by -45\"\n")
+ (insert "#+NAME: monthly-subscription-costs\n")
  (insert "| Month    | Est. Cost |\n")
  (insert "|----------+-----------|\n")
  (let ((monthly-costs (make-hash-table :test 'equal)))
@@ -691,7 +741,26 @@ This function runs in a separate process via async.el."
          (dolist (month-data month-list)
            (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
        (insert "| No Data  | 0.00      |\n"))) )
- (insert "\n\n"))
+ (insert "\n\n")
+
+  (insert "#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :results file\n")
+ (insert "set terminal png size 800,600\n")
+ (insert "set style data histogram\n")
+ (insert "set style fill solid\n")
+ (insert "set boxwidth 0.8\n")
+ (insert "set xtics rotate by -45\n")
+ (insert "set ylabel \"Amount\"\n")
+ (insert "set title \"Monthly Subscription Costs\"\n")
+ (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+ (insert "#+end_src\n\n\n")
+ 
+ (insert "#+ATTR_ORG: :width 600\n")
+ (insert "#+RESULTS:\n")
+ (insert "[[file:financial-report--monthly-subscription-costs.png]]\n\n")
+
+
+
+ )
 
 
 ;; --- Main Entry Point ---
