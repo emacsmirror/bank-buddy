@@ -114,15 +114,18 @@ The package expects a CSV file with these columns:
 #+end_src
 
 #+RESULTS:
-| TODO                                   | DOING              | DONE                   |
-|----------------------------------------+--------------------+------------------------|
-| Better gnuplot autogeneration of plots | Data Visualization | Asynchronous operation |
-| Generate test data and unit test       |                    |                        |
-| Budget Tracking                        |                    |                        |
-| Custom Category Mapping                |                    |                        |
-| AI-Powered Categorization              |                    |                        |
+| TODO                                                  | DOING              | DONE                   |
+|-------------------------------------------------------+--------------------+------------------------|
+| Better gnuplot autogeneration of plots                | Data Visualization | Asynchronous operation |
+| Highlight bank lines not matched for iterative tweaks |                    |                        |
+| Generate test data and unit test                      |                    |                        |
+| Budget Tracking                                       |                    |                        |
+| Custom Category Mapping                               |                    |                        |
+| AI-Powered Categorization                             |                    |                        |
 
 ** TODO Better gnuplot autogeneration of plots
+
+** TODO Highlight bank lines not matched for iterative tweaks
 
 ** TODO Generate test data and unit test
 
