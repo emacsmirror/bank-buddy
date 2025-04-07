@@ -150,20 +150,20 @@ plot data using 2:xtic(1) with boxes title "Amount"
 
 ** Top Spending Categories
 
-#+PLOT: title:"Top Spending Categories" ind:1 deps:(2)
+#+PLOT: title:"Top Spending Categories" ind:1 deps:(2) type:2d with:linespoints
 #+NAME: top-spending-categories
-| Category             |   Amount |
-|----------------------+----------|
-| Housing              | 36878.72 |
-| PayPal               | 24133.31 |
-| Food                 | 20355.18 |
-| Amazon               | 18816.11 |
-| Credit Card          | 18567.84 |
-| y                    | 15169.06 |
-| Pension              |  8204.80 |
-| Personal (Katherine) |  5451.08 |
-| Other                |  4939.48 |
-| Phone                |  2720.74 |
+| Category    |   Amount |
+|-------------+----------|
+| Housing     | 36878.72 |
+| PayPal      | 24133.31 |
+| Food        | 20355.18 |
+| Amazon      | 18816.11 |
+| Credit      | 18567.84 |
+| Utilities   | 15169.06 |
+| Pension     |  8204.80 |
+| Personal    |  5451.08 |
+| Other       |  4939.48 |
+| Phone       |  2720.74 |
 
 #+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :results file
 set terminal png size 800,600
