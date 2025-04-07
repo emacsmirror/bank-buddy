@@ -146,6 +146,22 @@
     ("APPLE.*ONE" . "Apple One"))
   "Patterns to identify specific subscriptions.")
 
+(defun bank-buddy-show-progress (message &optional append)
+  "Show progress MESSAGE in a dedicated buffer.
+If APPEND is non-nil, append to existing content."
+  (let ((buf (get-buffer-create "*Bank Buddy Progress*")))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (if (not append)
+            (erase-buffer)
+          (goto-char (point-max))
+          (unless (bolp) (insert "\n")))
+        (insert (format "[%s] %s" (format-time-string "%H:%M:%S") message))
+        (unless (looking-at "$") (insert "\n"))))
+    ;; Display buffer if not already visible
+    (unless (get-buffer-window buf)
+      (display-buffer buf))))
+
 ;; Helper function for date calculation (no change needed)
 (defun bank-buddy-days-between (date1 date2)
   "Calculate days between DATE1 and DATE2 in YYYY-MM-DD format."
@@ -698,7 +714,7 @@ This function runs in a separate process via async.el."
   (setq output-file (expand-file-name output-file))
   
   ;; Inform the user that processing has started
-  (message "Bank Buddy: Starting background processing of %s..." (file-name-nondirectory csv-file))
+  (bank-buddy-show-progress (format "Starting analysis of %s..." (file-name-nondirectory csv-file)))
 
   ;; Start the asynchronous task
   (async-start
@@ -731,10 +747,12 @@ This function runs in a separate process via async.el."
             (plist-put worker-result :csv-file ,csv-file)
             (plist-put worker-result :output-file ,output-file)
             worker-result))))
+      
+      ;; (bank-buddy-show-progress "CSV parsing complete." t))
 
    ;; The callback function that uses file paths from the result
    (lambda (result)
-     (message "Bank Buddy: Processing finished. Evaluating result...")
+     ;; (bank-buddy-show-progress "Analyzing transactions..." t)
 
      ;; Extract file paths from the result
      (let ((csv-file (plist-get result :csv-file))
@@ -749,7 +767,7 @@ This function runs in a separate process via async.el."
 
          ;; Process success (no worker error reported)
          (progn
-           (message "Bank Buddy: Generating report...")
+           (bank-buddy-show-progress "Generating report..." t)
 
            ;; Clear previous global data
            (clrhash bank-buddy-cat-tot)
@@ -757,12 +775,13 @@ This function runs in a separate process via async.el."
            (clrhash bank-buddy-monthly-totals)
            (clrhash bank-buddy-txn-size-dist)
            (clrhash bank-buddy-subs)
+           
            (setq bank-buddy-date-first nil)
            (setq bank-buddy-date-last nil)
-
            ;; Populate globals from the returned plist
            (setq bank-buddy-date-first (plist-get result :date-first))
            (setq bank-buddy-date-last (plist-get result :date-last))
+           
            (when (hash-table-p (plist-get result :cat-tot))
              (maphash (lambda (k v) (puthash k v bank-buddy-cat-tot)) (plist-get result :cat-tot)))
            (when (hash-table-p (plist-get result :merchants))
@@ -773,8 +792,8 @@ This function runs in a separate process via async.el."
              (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
-
            ;; Generate the report content in a temp buffer
+           
            (with-temp-buffer
              (org-mode)
              (insert "#+title: Financial Report (Bank Buddy)\n")
@@ -789,8 +808,9 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-plots)
              (write-region (point-min) (point-max) output-file nil 'quiet))
-
-           (message "Bank Buddy: Report generated successfully: %s" output-file)
+           
+           (bank-buddy-show-progress (format "Report generated successfully: %s" output-file) t)
+           
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
              (find-file output-file)))))))
   )
