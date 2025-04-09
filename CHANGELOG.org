@@ -1,0 +1,22 @@
+#+title: Change Log for bank-Buddy
+#+author: James Dyer
+#+email: captainflasmr@gmail.com
+#+language: en
+#+options: ':t toc:nil author:nil email:nil num:nil title:nil
+#+todo: TODO DOING | DONE
+#+startup: showall
+
+This document contains the release notes for each tagged commit on the
+project's main git repository: [[https://github.com/captainflasmr/bank-buddy]]
+
+* Versions
+
+** <2025-04-09> 0.1.0
+
+Refactor code and improve customization options
+
+- Remove redundant comments and simplify code structure.
+- Enhance customization options by adding =defcustom= for user settings.
+- Introduce new functions for better code modularity and maintainability.
+- Adjust plots and visualization settings for improved clarity.
+  
