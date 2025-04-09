@@ -25,39 +25,6 @@
 (require 'org)
 (require 'cl-lib)
 
-;; Convert bank-buddy-cat-list-defines to defcustom
-(defcustom bank-buddy-cat-list-defines
-  '(("katherine\\|lucinda\\|kate" "kat")
-    ("railw\\|railway\\|selfserve\\|train" "trn")
-    ("paypal" "pay")
-    ("virgin-media\\|uinsure\\|insurance\\|royal-mail\\|postoffice\\|endsleigh\\|waste\\|lloyds\\|electric\\|sse\\|newsstand\\|privilege\\|pcc\\|licence\\|ovo\\|energy\\|bt\\|water" "utl")
-    ("sky-betting\\|b365\\|races\\|bet365\\|racing" "bet")
-    ("stakeholde\\|widows" "pen")
-    ("nsibill\\|vines\\|ns&i\\|saver" "sav")
-    ("uber\\|aqua" "txi")
-    ("magazine\\|specs\\|zinio\\|specsavers\\|publishing\\|anthem\\|kindle\\|news" "rdg")
-    ("claude\\|escape\\|deviant\\|cleverbridge\\|reddit\\|pixel\\|boox\\|ionos\\|microsoft\\|mobile\\|backmarket\\|cartridge\\|whsmith\\|dazn\\|my-picture\\|openai\\|c-date\\|ptitis\\|keypmt\\|billnt\\|fee2nor\\|assistance\\|boxise\\|billkt\\|paintstor\\|iet-main\\|ffnhelp\\|shadesgrey\\|venntro\\|vtsup\\|sunpts\\|apyse\\|palchrge\\|maypmt\\|filemodedesk\\|istebrak\\|connective\\|avangate\\|stardock\\|avg\\|123\\|web\\|a2" "web")
-    ("notemachine\\|anchrg\\|hilsea\\|withdrawal" "atm")
-    ("finance" "fin")
-    ("youtube\\|entertai\\|twitch\\|disney\\|box-office\\|discovery\\|tvplayer\\|vue\\|sky\\|netflix\\|audible\\|nowtv\\|channel\\|prime" "str")
-    ("platinum\\|card" "crd")
-    ("top-up\\|three\\|h3g" "phn")
-    ("amaz\\|amz" "amz")
-    ("pets\\|pet" "pet")
-    ("mydentist\\|dentist" "dnt")
-    ("natwest-bank-reference\\|residential\\|rent\\|yeong" "hse")
-    ("mardin\\|starbuck\\|gillett-copnor\\|asda\\|morrison\\|sainsburys\\|waitrose\\|tesco\\|domino\\|deliveroo\\|just.*eat" "fod")
-    ("retail-ltd\\|vinted\\|lockart\\|moment-house\\|yuyu\\|bushra\\|newhome\\|white-barn\\|skinnydip\\|mgs\\|river-island\\|spencer\\|lilian\\|jung\\|ikea\\|wayfair\\|neom\\|teespring\\|lick-home\\|matalan\\|devon-wick\\|united-arts\\|lush-retail\\|lisa-angel\\|sharkninja\\|fastspring\\|bonas\\|asos\\|emma\\|sofology\\|ebay\\|dunelm\\|coconut\\|semantical\\|truffle\\|nextltd\\|highland\\|little-crafts\\|papier\\|the-hut\\|new-look\\|samsung\\|astrid\\|pandora\\|waterstone\\|cultbeauty\\|24pymt\\|champo\\|costa\\|gollo\\|pumpkin\\|argos\\|the-range\\|biffa\\|moonpig\\|apple\\|itunes\\|gold\\|interflora\\|thortful" "shp")
-    ("js-law" "law")
-    ("anyvan" "hmv")
-    (".*" "o"))
-  "Categorization patterns for transactions.
-Each entry is a cons cell where the car is a regex pattern
-and the cdr is the category code to assign when the pattern matches."
-  :type '(repeat (list (string :tag "Pattern Regex")
-                       (string :tag "Category Code")))
-  :group 'bank-buddy)
-
 ;; Variables for the mode
 (defvar bank-buddy-cat-mode-map
   (let ((map (make-sparse-keymap)))
@@ -163,61 +130,63 @@ Returns the selected category code."
 This command should be used when the point is in an unmatched transaction
 in the bank-buddy report."
   (interactive)
-  
-  ;; Check if we're in a bank-buddy report
-  (unless (derived-mode-p 'org-mode)
-    (user-error "This command should be used in an org-mode bank-buddy report"))
-  
-  ;; Get selected text or current line if no selection
-  (let ((pattern (if (use-region-p)
-                    (buffer-substring-no-properties (region-beginning) (region-end))
-                  (buffer-substring-no-properties 
-                   (line-beginning-position) 
-                   (line-end-position)))))
+  (save-excursion  
+    ;; Check if we're in a bank-buddy report
+    (unless (derived-mode-p 'org-mode)
+      (user-error "This command should be used in an org-mode bank-buddy report"))
     
-    ;; Clean up the pattern - remove any leading/trailing whitespace or quotes
-    (setq pattern (string-trim pattern))
-    (when (string-match "^\"\\(.*\\)\"$" pattern)
-      (setq pattern (match-string 1 pattern)))
-    
-    ;; Confirm with the user
-    (unless (y-or-n-p (format "Add pattern \"%s\" to category definitions? " pattern))
-      (user-error "Operation canceled"))
-    
-    ;; Ask for category
-    (let ((category (bank-buddy-cat-choose-category pattern)))
+    ;; Get selected text or current line if no selection
+    (let ((pattern (if (use-region-p)
+                       (buffer-substring-no-properties (region-beginning) (region-end))
+                     (buffer-substring-no-properties 
+                      (line-beginning-position) 
+                      (line-end-position)))))
       
-      ;; Escape regex special characters in the pattern
-      (setq pattern (regexp-quote pattern))
+      ;; Clean up the pattern - remove any leading/trailing whitespace or quotes
+      (setq pattern (string-trim pattern))
+      (when (string-match "^\"\\(.*\\)\"$" pattern)
+        (setq pattern (match-string 1 pattern)))
+
+      (deactivate-mark)
       
-      ;; Add the new pattern to bank-buddy-cat-list-defines
-      (let* ((existing-categories (bank-buddy-cat-get-existing-categories))
-             (category-entry (assoc category existing-categories))
-             (catch-all-entry (assoc ".*" bank-buddy-cat-list-defines))
-             (position-to-insert (if catch-all-entry
-                                     (- (length bank-buddy-cat-list-defines) 1)
-                                   (length bank-buddy-cat-list-defines))))
+      ;; Confirm with the user
+      (unless (y-or-n-p (format "Add pattern \"%s\" to category definitions? " pattern))
+        (user-error "Operation canceled"))
+      
+      ;; Ask for category
+      (let ((category (bank-buddy-cat-choose-category pattern)))
         
-        ;; Insert the new pattern before the catch-all pattern
-        (let ((new-defines (copy-sequence bank-buddy-cat-list-defines)))
-          (setf (nthcdr position-to-insert new-defines)
-                (cons (list pattern category)
-                      (nthcdr position-to-insert new-defines)))
-          (setq bank-buddy-cat-list-defines new-defines))
+        ;; Escape regex special characters in the pattern
+        (setq pattern (regexp-quote pattern))
         
-        ;; Confirm the operation
-        (message "Added pattern \"%s\" to category \"%s\" (%s)"
-                 pattern
-                 (bank-buddy-cat-get-category-name category)
-                 category)
-        
-        ;; Ask if the user wants to save to init file
-        (when (y-or-n-p "Save this category definition to your init file? ")
-          (bank-buddy-cat-save-to-init-file))
-        
-        ;; Ask if the user wants to regenerate the report
-        (when (y-or-n-p "Regenerate the report to see changes? ")
-          (bank-buddy-cat-regenerate-report))))))
+        ;; Add the new pattern to bank-buddy-cat-list-defines
+        (let* ((existing-categories (bank-buddy-cat-get-existing-categories))
+               (category-entry (assoc category existing-categories))
+               (catch-all-entry (assoc ".*" bank-buddy-cat-list-defines))
+               (position-to-insert (if catch-all-entry
+                                       (- (length bank-buddy-cat-list-defines) 1)
+                                     (length bank-buddy-cat-list-defines))))
+          
+          ;; Insert the new pattern before the catch-all pattern
+          (let ((new-defines (copy-sequence bank-buddy-cat-list-defines)))
+            (setf (nthcdr position-to-insert new-defines)
+                  (cons (list pattern category)
+                        (nthcdr position-to-insert new-defines)))
+            (setq bank-buddy-cat-list-defines new-defines))
+          
+          ;; Confirm the operation
+          (message "Added pattern \"%s\" to category \"%s\" (%s)"
+                   pattern
+                   (bank-buddy-cat-get-category-name category)
+                   category)
+          
+          ;; Ask if the user wants to save to init file
+          (when (y-or-n-p "Save this category definition to your init file? ")
+            (bank-buddy-cat-save-to-init-file))
+          
+          ;; Ask if the user wants to regenerate the report
+          (when (y-or-n-p "Regenerate the report to see changes? ")
+            (bank-buddy-cat-regenerate-report)))))))
 
 (defun bank-buddy-cat-save-to-init-file ()
   "Save the current bank-buddy-cat-list-defines to the user's init file."
@@ -269,7 +238,7 @@ in the bank-buddy report."
 (defun bank-buddy-cat-regenerate-report ()
   "Regenerate the bank-buddy report using the current CSV file."
   (interactive)
-  
+  (save-excursion  
   ;; Check if we're in a bank-buddy report
   (unless (derived-mode-p 'org-mode)
     (user-error "This command should be used in an org-mode bank-buddy report"))
@@ -307,7 +276,7 @@ in the bank-buddy report."
         (revert-buffer t t t)
         
         ;; Restore position approximately
-        (goto-char (min pos (point-max)))))))
+        (goto-char (min pos (point-max))))))))
 
 ;; Helper function to detect report properties when enabling the mode
 (defun bank-buddy-cat-detect-report-properties ()

@@ -1,11 +1,11 @@
-;;; bank-buddy.el --- Enhanced financial analysis and reporting for Emacs (Async Version)
+;;; bank-buddy.el --- Enhanced financial analysis and reporting for Emacs
 
 ;; Copyright (C) 2025 Your Name
 ;; Author: Your Name <your-email@example.com>
-;; Version: 1.1 (Async)
-;; Package-Requires: ((emacs "26.1") (csv "0.5") (async "1.9.4")) ;; Added async
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "26.1") (csv "0.5") (async "1.9.4"))
 ;; Keywords: finance, budget, reporting
-;; URL: https://github.com/yourusername/bank-buddy
+;; URL: https://github.com/captainflasmr/bank-buddy
 
 ;;; Commentary:
 ;;
@@ -29,12 +29,43 @@
 (require 'bank-buddy-cat-mode)
 (require 'csv)
 (require 'cl-lib)
-(require 'async) ;; Require the async library
+(require 'async)
+
+(defgroup bank-buddy nil
+  "Customization options for bank-buddy."
+  :group 'applications)
+
+(defcustom bank-buddy-exclude-large-txns t
+  "Whether to exclude transactions."
+  :type 'boolean
+  :group 'bank-buddy)
+
+(defcustom bank-buddy-large-txn-threshold 2000
+  "Threshold for large transactions in pounds."
+  :type 'number
+  :group 'bank-buddy)
+
+(defcustom bank-buddy-subscription-min-occurrences 3
+  "Minimum occurrences for subscription detection."
+  :type 'number
+  :group 'bank-buddy)
+
+(defcustom bank-buddy-top-spending-categories 10
+  "Number of top number of spending categories displayed."
+  :type 'number
+  :group 'bank-buddy)
+
+(defcustom bank-buddy-top-merchants 10
+  "Number of top number of merchants displayed."
+  :type 'number
+  :group 'bank-buddy)
 
 (defvar bank-buddy-unmatched-transactions '()
   "List of transactions that matched only the catch-all pattern.")
 
-;; Variables and data structures (remain global for report generation)
+(defvar bank-buddy-highest-month-amount 0
+  "The highest month amount.")
+
 (defvar bank-buddy-payments '()
   "List of parsed payment transactions. Populated by async callback.")
 
@@ -59,56 +90,38 @@
 (defvar bank-buddy-date-last nil
   "Last transaction date. Populated by async callback.")
 
-;; Customization options (remain the same)
-(defgroup bank-buddy nil
-  "Customization options for bank-buddy."
-  :group 'applications)
-
-(defcustom bank-buddy-exclude-large-txns t
-  "Whether to exclude transactions."
-  :type 'boolean
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-large-txn-threshold 2000
-  "Threshold for large transactions in pounds."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-subscription-min-occurrences 3
-  "Minimum occurrences for subscription detection."
-  :type 'number
-  :group 'bank-buddy)
-
-;; Category mappings and names (remain the same)
-(defvar bank-buddy-cat-list-defines
-  '(("katherine\\|lucinda\\|kate" "kat")
-    ("railw\\|railway\\|selfserve\\|train" "trn")
+;; Category mappings
+(defcustom bank-buddy-cat-list-defines
+  '(("katherine\\|james\\|kate" "prs")
+    ("railw\\|railway\\|train" "trn")
     ("paypal" "pay")
-    ("virgin-media\\|uinsure\\|insurance\\|royal-mail\\|postoffice\\|endsleigh\\|waste\\|lloyds\\|electric\\|sse\\|newsstand\\|privilege\\|pcc\\|licence\\|ovo\\|energy\\|bt\\|water" "utl")
-    ("sky-betting\\|b365\\|races\\|bet365\\|racing" "bet")
-    ("stakeholde\\|widows" "pen")
-    ("nsibill\\|vines\\|ns&i\\|saver" "sav")
-    ("uber\\|aqua" "txi")
-    ("magazine\\|specs\\|zinio\\|specsavers\\|publishing\\|anthem\\|kindle\\|news" "rdg")
-    ("claude\\|escape\\|deviant\\|cleverbridge\\|reddit\\|pixel\\|boox\\|ionos\\|microsoft\\|mobile\\|backmarket\\|cartridge\\|whsmith\\|dazn\\|my-picture\\|openai\\|c-date\\|ptitis\\|keypmt\\|billnt\\|fee2nor\\|assistance\\|boxise\\|billkt\\|paintstor\\|iet-main\\|ffnhelp\\|shadesgrey\\|venntro\\|vtsup\\|sunpts\\|apyse\\|palchrge\\|maypmt\\|filemodedesk\\|istebrak\\|connective\\|avangate\\|stardock\\|avg\\|123\\|web\\|a2" "web")
-    ("notemachine\\|anchrg\\|hilsea\\|withdrawal" "atm")
+    ("electric\\|energy\\|water" "utl")
+    ("racing" "bet")
+    ("pension" "pen")
+    ("savings\\|saver" "sav")
+    ("uber" "txi")
+    ("magazine\\|news" "rdg")
+    ("claude\\|reddit\\|mobile\\|backmarket\\|openai\\|web" "web")
+    ("notemachine\\|withdrawal" "atm")
     ("finance" "fin")
-    ("youtube\\|entertai\\|twitch\\|disney\\|box-office\\|discovery\\|tvplayer\\|vue\\|sky\\|netflix\\|audible\\|nowtv\\|channel\\|prime" "str")
-    ("platinum\\|card" "crd")
-    ("top-up\\|three\\|h3g" "phn")
+    ("youtube\\|netflix" "str")
+    ("card" "crd")
+    ("top-up\\|phone" "phn")
     ("amaz\\|amz" "amz")
     ("pets\\|pet" "pet")
-    ("mydentist\\|dentist" "dnt")
-    ("natwest-bank-reference\\|residential\\|rent\\|yeong" "hse")
-    ("mardin\\|starbuck\\|gillett-copnor\\|asda\\|morrison\\|sainsburys\\|waitrose\\|tesco\\|domino\\|deliveroo\\|just.*eat" "fod")
-    ("retail-ltd\\|vinted\\|lockart\\|moment-house\\|yuyu\\|bushra\\|newhome\\|white-barn\\|skinnydip\\|mgs\\|river-island\\|spencer\\|lilian\\|jung\\|ikea\\|wayfair\\|neom\\|teespring\\|lick-home\\|matalan\\|devon-wick\\|united-arts\\|lush-retail\\|lisa-angel\\|sharkninja\\|fastspring\\|bonas\\|asos\\|emma\\|sofology\\|ebay\\|dunelm\\|coconut\\|semantical\\|truffle\\|nextltd\\|highland\\|little-crafts\\|papier\\|the-hut\\|new-look\\|samsung\\|astrid\\|pandora\\|waterstone\\|cultbeauty\\|24pymt\\|champo\\|costa\\|gollo\\|pumpkin\\|argos\\|the-range\\|biffa\\|moonpig\\|apple\\|itunes\\|gold\\|interflora\\|thortful" "shp")
-    ("js-law" "law")
+    ("dentist" "dnt")
+    ("residential\\|rent\\|mortgage" "hse")
+    ("deliveroo\\|just.*eat" "fod")
+    ("ebay\\|apple\\|itunes" "shp")
+    ("law" "law")
     ("anyvan" "hmv")
     (".*" "o"))
-  "Categorization patterns for transactions.")
+  "Categorization patterns for transactions."
+  :type '(alist :key-type string :value-type string)
+  :group 'bank-buddy)
 
-(defvar bank-buddy-category-names
-  '(("kat" . "Personal (Katherine)")
+(defcustom bank-buddy-category-names
+  '(("prs" . "Personal")
     ("trn" . "Transport")
     ("pay" . "PayPal")
     ("utl" . "Utilities")
@@ -132,9 +145,11 @@
     ("law" . "Legal")
     ("hmv" . "Moving")
     ("o" . "Other"))
-  "Human-readable category names for reporting.")
+  "Human-readable category names for reporting."
+  :type '(alist :key-type string :value-type string)
+  :group 'bank-buddy)
 
-(defvar bank-buddy-subscription-patterns
+(defcustom bank-buddy-subscription-patterns
   '(("RACINGTV" . "Racing TV")
     ("GOOGLE" . "Google Play")
     ("PRIME VIDEO" . "Prime Video")
@@ -148,13 +163,88 @@
     ("DISNEY" . "Disney+")
     ("SPOTIFY" . "Spotify")
     ("APPLE.*ONE" . "Apple One"))
-  "Patterns to identify specific subscriptions.")
+  "Patterns to identify specific subscriptions."
+  :type '(alist :key-type string :value-type string)
+  :group 'bank-buddy)
+
+(defun bank-buddy-get-month-category-totals (month)
+  "Get the totals for each category in the specified MONTH."
+  (let ((cat-totals '()))
+    (maphash (lambda (key value)
+               (when (string-prefix-p month key)
+                 (let* ((parts (split-string key "-"))
+                        (category (when (>= (length parts) 2)
+                                    (nth (1- (length parts)) parts))))
+                   (when category
+                     (push (cons category value) cat-totals)))))
+             bank-buddy-cat-tot)
+    cat-totals))
+
+(defun bank-buddy-get-global-category-order ()
+  "Determine the global category order based on total spending across all months."
+  (let ((cat-totals (make-hash-table :test 'equal)))
+    ;; Aggregate spending across all months by category
+    (maphash (lambda (key value)
+               (let* ((parts (split-string key "-"))
+                      (category (when (>= (length parts) 2)
+                                  (nth (1- (length parts)) parts))))
+                 (when category
+                   (puthash category
+                            (+ (gethash category cat-totals 0) value)
+                            cat-totals))))
+             bank-buddy-cat-tot)
+    
+    ;; Convert to list and sort by total amount (descending)
+    (let ((cat-list '()))
+      (maphash (lambda (category amount)
+                 (push (cons category amount) cat-list))
+               cat-totals)
+      (setq cat-list (sort cat-list (lambda (a b) (> (cdr a) (cdr b)))))
+      
+      ;; Return just the ordered category codes
+      (mapcar 'car cat-list))))
+
+(defun bank-buddy-generate-category-bar (month global-category-order bar-width month-amount)
+  "Generate a text-based bar showing category spending for MONTH.
+GLOBAL-CATEGORY-ORDER is the list of categories in their consistent display order.
+BAR-WIDTH is the maximum width of the bar in characters."
+  (let* ((month-total bank-buddy-highest-month-amount)
+         (cat-totals-hash (make-hash-table :test 'equal))
+         (bar-text "")
+         (num-categories-shown 0)
+         (max-categories-to-show 4)) ;; Limit number of categories to keep visual clean
+    
+    ;; Convert month's category totals to hash for easy lookup
+    (dolist (cat-pair (bank-buddy-get-month-category-totals month))
+      (puthash (car cat-pair) (cdr cat-pair) cat-totals-hash))
+    
+    ;; Now build the bar with consistent category order
+    (dolist (category global-category-order)
+      (let ((amount (gethash category cat-totals-hash 0)))
+        (when (and (> amount 0) 
+                   (< num-categories-shown max-categories-to-show))
+          (let* ((proportion (/ amount month-total))
+                 (segment-width (round (* proportion bar-width)))
+                 (display-text (format "%s" category))
+                 (padding-length (- segment-width (length display-text) 1)))
+
+            (when (>= padding-length 0)
+              (setq bar-text (concat bar-text 
+                                     display-text 
+                                     (make-string padding-length ?_)
+                                     "/"))
+              (setq num-categories-shown (1+ num-categories-shown)))))))
+    
+    ;; Return the complete bar
+    (if (string= bar-text "")
+        (make-string 3 ?-) ;; Return minimal bar if no data
+      (concat "/" bar-text))))
 
 (defun bank-buddy-generate-unmatched-transactions ()
   "Generate a section showing transactions that weren't matched by specific patterns."
   (insert "\n* Unmatched Transactions\n\n")
   (insert "The following transactions were only matched by the catch-all pattern (\".*\"). ")
-  (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`.\n\n")
+  (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`\n\n")
   
   (if bank-buddy-unmatched-transactions
       (progn
@@ -337,7 +427,6 @@ This function runs in a separate process via async.el."
           :unmatched-transactions bank-buddy-unmatched-transactions-local
           )))
 
-;; --- Reporting Functions (remain largely the same, operate on global vars) ---
 ;; These functions assume the global variables have been populated by the async callback.
 
 (defun bank-buddy-generate-summary-overview ()
@@ -372,8 +461,8 @@ This function runs in a separate process via async.el."
         (progn
           (insert (format "- *Average Daily Spending:* £%.2f\n"
                           (/ total-spending date-range-days)))
-          (insert (format "- *Average Monthly Spending (approx):* £%.2f\n"
-                          (/ total-spending (/ date-range-days 30.0)))))
+          (insert (format "- *Average Weekly Spending:* £%.2f\n"
+                          (* (/ total-spending date-range-days) 7))))
       (insert "- *Average Spending:* Cannot calculate without valid date range.\n"))))
 
 
@@ -458,29 +547,21 @@ This function runs in a separate process via async.el."
     (insert "\n* Top Spending Categories\n\n")
     (if (and categories (> total-spending 0))
         (let ((counter 1))
-          ;; First show the averages in a summary section
-          (insert "** Summary\n\n")
-          (insert (format "- *Total spending:* £%.2f\n" total-spending))
-          (insert (format "- *Monthly average (all categories):* £%.2f\n" 
-                         (/ total-spending (float total-months))))
-          (insert (format "- *Yearly average (all categories):* £%.2f\n\n" 
-                         (* 12 (/ total-spending (float total-months)))))
-          
           ;; Then show the breakdown by category
-          (insert "** Category Breakdown\n\n")
           (dolist (cat categories)
-            (when (<= counter 10) ;; Only show top 10
+            (when (<= counter bank-buddy-top-spending-categories)
               (let* ((cat-name (cdr (assoc (car cat) bank-buddy-category-names)))
                      (amount (cdr cat))
                      (monthly-avg (/ amount (float total-months)))
                      (yearly-avg (* 12 monthly-avg)))
-                (insert (format "%d. *%s:* £%.2f (%.1f%%)\n"
+                (insert (format "%d. /%s/ *%s:* £%.2f (%.1f%%)\n"
                                 counter
+                                (car cat)
                                 (or cat-name (car cat))
                                 amount
                                 (* 100.0 (/ amount total-spending))))
                 (insert (format "   - Monthly avg: £%.2f, Yearly avg: £%.2f\n"
-                               monthly-avg yearly-avg)))
+                                monthly-avg yearly-avg)))
               (setq counter (1+ counter)))))
       (insert "No category spending data available.\n"))))
 
@@ -521,22 +602,20 @@ This function runs in a separate process via async.el."
     ;; Sort by amount (descending)
     (setq merchants-list (sort merchants-list (lambda (a b) (> (cdr a) (cdr b)))))
 
-    (insert "\n* Top 10 Merchants\n\n")
+    (insert "\n* Top Merchants\n\n")
     (if merchants-list
         (progn
           ;; Add a summary section with overall totals
-          (insert "** Summary\n\n")
           (insert (format "- *Total merchant spending:* £%.2f\n" total-spending))
           (insert (format "- *Monthly average (all merchants):* £%.2f\n" 
-                         (/ total-spending (float total-months))))
+                          (/ total-spending (float total-months))))
           (insert (format "- *Yearly average (all merchants):* £%.2f\n\n" 
-                         (* 12 (/ total-spending (float total-months)))))
-          
+                          (* 12 (/ total-spending (float total-months)))))
+          (insert "Shown are the top retail/merchants with associated statistics\n\n")
           ;; Detailed merchant breakdown
-          (insert "** Merchant Breakdown\n\n")
           (let ((counter 1))
             (dolist (merchant merchants-list)
-              (when (<= counter 10) ;; Only show top 10
+              (when (<= counter bank-buddy-top-merchants)
                 (let* ((amount (cdr merchant))
                        (monthly-avg (/ amount (float total-months)))
                        (yearly-avg (* 12 monthly-avg))
@@ -547,22 +626,24 @@ This function runs in a separate process via async.el."
                                   amount
                                   percent))
                   (insert (format "   - Monthly avg: £%.2f, Yearly avg: £%.2f\n"
-                                 monthly-avg yearly-avg)))
+                                  monthly-avg yearly-avg)))
                 (setq counter (1+ counter))))))
       (insert "No merchant spending data available.\n"))))
 
 (defun bank-buddy-generate-monthly-spending ()
-  "Generate monthly spending patterns section."
+  "Generate monthly spending patterns section with text-based category visualization."
   (let* ((months-list '())
          (year-months (mapcar #'identity (hash-table-keys bank-buddy-monthly-totals))) ; Get keys
          (total-spending 0)
          (month-count 0)
          highest-month lowest-month
-         highest-amount lowest-amount)
+         highest-amount lowest-amount
+         (global-category-order nil))
 
     ;; Check if year-months is not empty before sorting
     (when year-months
       (setq year-months (sort year-months #'string<))
+      (setq global-category-order (bank-buddy-get-global-category-order))
 
       ;; Calculate total and identify highest/lowest
       (dolist (month year-months)
@@ -580,6 +661,8 @@ This function runs in a separate process via async.el."
                 (setq lowest-month month
                       lowest-amount amount))))))
 
+    (setq bank-buddy-highest-month-amount highest-amount)
+    
     (insert "\n* Monthly Spending Patterns\n\n")
     (if (> month-count 0)
         (progn
@@ -594,18 +677,23 @@ This function runs in a separate process via async.el."
           (insert (format "- *Average Monthly Spending:* £%.2f\n\n"
                           (/ total-spending month-count)))
 
-          ;; Monthly breakdown
-          (insert "** Monthly Spending Breakdown\n")
-          (insert "#+begin_src text\n") ; Use text for simpler formatting
-
+          ;; Monthly breakdown with visualization
+          (insert "Each bar shows spending by category. The 3-letter codes represent categories,\n")
+          (insert "with consistent ordering by overall spending (highest to lowest) across all months.\n")
+          (insert "The length of each segment is proportional to its share of that month's spending.\n\n")
+          (insert "#+begin_verse\n")
           ;; Sort the list representation for output
           (setq months-list (sort months-list (lambda (a b) (string< (car a) (car b)))))
-          (dolist (month-data months-list)
-            (insert (format "%s: £%.2f\n" (car month-data) (cdr month-data))))
-
-          (insert "#+end_src\n"))
+          
+          (let ((bar-width 80)) ;; Wider bar to accommodate text-based visualization
+            (dolist (month-data months-list)
+              (let* ((month (car month-data))
+                     (amount (cdr month-data))
+                     (bar-text (bank-buddy-generate-category-bar 
+                                month global-category-order bar-width amount)))
+                (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
+          (insert "#+end_verse\n"))
       (insert "No monthly spending data available.\n"))))
-
 
 (defun bank-buddy-generate-subscriptions ()
   "Generate recurring subscriptions section."
@@ -703,7 +791,6 @@ This function runs in a separate process via async.el."
          ((and (>= avg-interval annual-low) (<= avg-interval annual-high)) "annual")
          (t "irregular"))))))
 
-
 (defun bank-buddy-generate-plots ()
   "Generate org-plot visualizations of financial data."
   (insert "\n* Data Visualizations\n\n")
@@ -724,9 +811,9 @@ This function runs in a separate process via async.el."
         (dolist (month-data month-list)
           (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
       (insert "| No Data  | 0.00     |\n")))
-  (insert "\n\n")
+  (insert "\n")
 
-  (insert "#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :execute_on_open t :results file\n")
+  (insert "#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :execute_on_open t :results file :exports results\n")
   (insert "set terminal png size 800,600\n")
   (insert "set style data histogram\n")
   (insert "set style fill solid\n")
@@ -735,7 +822,7 @@ This function runs in a separate process via async.el."
   (insert "set ylabel \"Amount\"\n")
   (insert "set title \"Monthly Spending Trend\"\n")
   (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
-  (insert "#+end_src\n\n\n")
+  (insert "#+end_src\n\n")
   
   (insert "#+ATTR_ORG: :width 600\n")
   (insert "#+RESULTS:\n")
@@ -761,9 +848,9 @@ This function runs in a separate process via async.el."
                  (cat-name (cdr (assoc (car cat) bank-buddy-category-names))))
             (insert (format "| %s | %.2f |\n" (or cat-name (car cat)) (cdr cat)))))
       (insert "| No Data         | 0.00   |\n")))
-  (insert "\n\n")
+  (insert "\n")
 
-  (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file\n")
+  (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results\n")
   (insert "set terminal png size 800,600\n")
   (insert "set style data histogram\n")
   (insert "set style fill solid\n")
@@ -772,7 +859,7 @@ This function runs in a separate process via async.el."
   (insert "set ylabel \"Amount\"\n")
   (insert "set title \"Top Spending Categories\"\n")
   (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
-  (insert "#+end_src\n\n\n")
+  (insert "#+end_src\n\n")
   
   (insert "#+ATTR_ORG: :width 600\n")
   (insert "#+RESULTS:\n")
@@ -796,9 +883,9 @@ This function runs in a separate process via async.el."
           (insert (format "| £50 to £100   | %d |\n" to-100))
           (insert (format "| Over £100     | %d |\n" over-100)))
       (insert "| No Data       | 0     |\n")))
-  (insert "\n\n")
+  (insert "\n")
 
-  (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :execute_on_open t :results file\n")
+  (insert "#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :execute_on_open t :results file :exports results\n")
   (insert "set terminal png size 800,600\n")
   (insert "set style data histogram\n")
   (insert "set style fill solid\n")
@@ -807,7 +894,7 @@ This function runs in a separate process via async.el."
   (insert "set ylabel \"Amount\"\n")
   (insert "set title \"Transaction Size Distribution\"\n")
   (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
-  (insert "#+end_src\n\n\n")
+  (insert "#+end_src\n\n")
   
   (insert "#+ATTR_ORG: :width 600\n")
   (insert "#+RESULTS:\n")
@@ -852,9 +939,9 @@ This function runs in a separate process via async.el."
           (dolist (month-data month-list)
             (insert (format "| %s | %.2f |\n" (car month-data) (cdr month-data))))
         (insert "| No Data  | 0.00      |\n"))) )
-  (insert "\n\n")
+  (insert "\n")
 
-  (insert "#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :execute_on_open t :results file\n")
+  (insert "#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :execute_on_open t :results file :exports results\n")
   (insert "set terminal png size 800,600\n")
   (insert "set style data histogram\n")
   (insert "set style fill solid\n")
@@ -863,16 +950,12 @@ This function runs in a separate process via async.el."
   (insert "set ylabel \"Amount\"\n")
   (insert "set title \"Monthly Subscription Costs\"\n")
   (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
-  (insert "#+end_src\n\n\n")
+  (insert "#+end_src\n\n")
   
   (insert "#+ATTR_ORG: :width 600\n")
   (insert "#+RESULTS:\n")
   (insert "[[file:financial-report--monthly-subscription-costs.png]]\n\n")
-
-
-
   )
-
 
 ;; --- Main Entry Point ---
 
@@ -969,7 +1052,7 @@ This function runs in a separate process via async.el."
              (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
-             
+           
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
            
@@ -979,15 +1062,16 @@ This function runs in a separate process via async.el."
              (insert "#+title: Financial Report (Bank Buddy)\n")
              (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
              (insert (format "#+date: %s\n" (format-time-string "%Y-%m-%d %H:%M:%S")))
-             (insert "#+options: toc:2 num:nil\n")
+             (insert "#+options: toc:1 num:nil\n")
              (insert "#+startup: inlineimages showall\n\n")
              (bank-buddy-generate-summary-overview)
-             (bank-buddy-generate-transaction-size-distribution)
              (bank-buddy-generate-top-spending-categories)
-             (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-monthly-spending)
+             (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-subscriptions)
-             (bank-buddy-generate-unmatched-transactions) ; Add the new section
+             (bank-buddy-generate-transaction-size-distribution)
+             (bank-buddy-generate-unmatched-transactions)
+             (insert "\n-----\n")
              (bank-buddy-generate-plots)
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
@@ -1022,20 +1106,6 @@ This function runs in a separate process via async.el."
         (insert "#+end_src\n"))
       (goto-char (point-min))
       (display-buffer (current-buffer)))))
-
-;; Utility function for development/debugging (no change needed)
-(defun bank-buddy-debug-info ()
-  "Display debug information about current data state."
-  (interactive)
-  (message "Bank Buddy Debug Info:")
-  (message " Dates: %s to %s" bank-buddy-date-first bank-buddy-date-last)
-  (message " Cat Totals: %d entries" (hash-table-count bank-buddy-cat-tot))
-  (message " Merchants: %d entries" (hash-table-count bank-buddy-merchants))
-  (message " Monthly Totals: %d entries" (hash-table-count bank-buddy-monthly-totals))
-  (message " Txn Size Dist: %d entries" (hash-table-count bank-buddy-txn-size-dist))
-  (message " Subscriptions: %d entries" (hash-table-count bank-buddy-subs))
-  ;; Optionally display some sample data if needed
-  )
 
 (provide 'bank-buddy)
 
