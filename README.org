@@ -362,14 +362,13 @@ Some users analyze financial CSV data using built-in Emacs packages like csv-mod
 #+end_src
 
 #+RESULTS:
-| TODO                                                  | DOING              | DONE                   |
-|-------------------------------------------------------+--------------------+------------------------|
-| Better gnuplot autogeneration of plots                | Data Visualization | Asynchronous operation |
-| Highlight bank lines not matched for iterative tweaks |                    |                        |
-| Generate test data and unit test                      |                    |                        |
-| Budget Tracking                                       |                    |                        |
-| Custom Category Mapping                               |                    |                        |
-| AI-Powered Categorization                             |                    |                        |
+| TODO                      | DOING                                                 | DONE                   |
+|---------------------------+-------------------------------------------------------+------------------------|
+| Add Paypal break down csv | Highlight bank lines not matched for iterative tweaks | Asynchronous operation |
+| Add large sum outlays     | Generate test data and unit test                      |                        |
+| Budget Tracking           | Data Visualization                                    |                        |
+| AI-Powered Categorization | Better gnuplot autogeneration of plots                |                        |
+|                           | Custom Category Mapping                               |                        |
 
 ** DOING Highlight bank lines not matched for iterative tweaks
 
@@ -384,6 +383,10 @@ Add interactive charts and graphs using Org-babel
 ** DOING Custom Category Mapping
 
 Allow user-defined categories
+
+** TODO Add Paypal break down csv
+
+** TODO Add large sum outlays
 
 ** TODO Budget Tracking
 
