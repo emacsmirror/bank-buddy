@@ -695,14 +695,15 @@ This function runs in a separate process via async.el."
       (insert "No merchant spending data available.\n"))))
 
 (defun bank-buddy-generate-monthly-spending ()
-  "Generate monthly spending patterns section with text-based category visualization."
+  "Generate monthly spending patterns section with text-based category visualization and data table."
   (let* ((months-list '())
          (year-months (mapcar #'identity (hash-table-keys bank-buddy-monthly-totals))) ; Get keys
          (total-spending 0)
          (month-count 0)
          highest-month lowest-month
          highest-amount lowest-amount
-         (global-category-order nil))
+         (global-category-order nil)
+         (all-monthly-cat-data '())) ; Added to collect category data for each month
 
     ;; Check if year-months is not empty before sorting
     (when year-months
@@ -723,13 +724,18 @@ This function runs in a separate process via async.el."
                       highest-amount amount))
             (if (or (not lowest-amount) (< amount lowest-amount))
                 (setq lowest-month month
-                      lowest-amount amount))))))
+                      lowest-amount amount)))
+          
+          ;; Collect category data for this month
+          (let ((month-cat-totals (bank-buddy-get-month-category-totals month)))
+            (push (cons month month-cat-totals) all-monthly-cat-data)))))
 
     (setq bank-buddy-highest-month-amount highest-amount)
     
     (insert "\n* Monthly Spending Patterns\n\n")
     (if (> month-count 0)
         (progn
+          ;; Summary section
           (if highest-month
               (insert (format "- *Highest Month:* %s (£%.2f)\n"
                               highest-month highest-amount))
@@ -741,7 +747,8 @@ This function runs in a separate process via async.el."
           (insert (format "- *Average Monthly Spending:* £%.2f\n\n"
                           (/ total-spending month-count)))
 
-          ;; Monthly breakdown with visualization
+          ;; Text-based visualization (keep the existing one)
+          (insert "** Text-Based Category Visualization\n\n")
           (insert "Each bar shows spending by category. The 3-letter codes represent categories,\n")
           (insert "with consistent ordering by overall spending (highest to lowest) across all months.\n")
           (insert "The length of each segment is proportional to its share of that month's spending.\n\n")
@@ -756,8 +763,70 @@ This function runs in a separate process via async.el."
                      (bar-text (bank-buddy-generate-category-bar 
                                 month global-category-order bar-width amount)))
                 (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
-          (insert "#+end_verse\n"))
-      (insert "No monthly spending data available.\n"))))
+          (insert "#+end_verse\n\n")
+          
+          ;; Add monthly spending data table
+          (insert "** Monthly Spending Data Table\n\n")
+          (insert "This table provides structured data for each month's spending, suitable for plotting.\n\n")
+          
+          ;; Create main monthly spending table
+          (insert "#+NAME: monthly-spending-data\n")
+          (insert "| Month | Total Spending |\n")
+          (insert "|-------+----------------|\n")
+          (dolist (month-data (sort months-list (lambda (a b) (string< (car a) (car b)))))
+            (insert (format "| %s | %14.2f |\n" (car month-data) (cdr month-data))))
+          (insert "\n")
+
+          (insert "\n#+begin_src gnuplot :var data=monthly-spending-data :file financial-report--monthly-spending-data.png :execute_on_open t :results file :exports results\n")
+          (insert "set terminal png size 800,600\n")
+          (insert "set style data histogram\n")
+          (insert "set style fill solid\n")
+          (insert "set boxwidth 0.8\n")
+          (insert "set xtics rotate by -45\n")
+          (insert "set ylabel \"Amount\"\n")
+          (insert "set title \"Top Spending Categories\"\n")
+          (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+          (insert "#+end_src\n\n")
+          
+          (insert "#+ATTR_ORG: :width 600\n")
+          (insert "#+RESULTS:\n")
+          (insert "[[file:financial-report--monthly-spending-data.png]]\n\n")
+          
+          ;; Create category breakdown tables for each month
+          (setq all-monthly-cat-data (sort all-monthly-cat-data 
+                                           (lambda (a b) (string< (car a) (car b)))))
+          
+          (insert "** Monthly Category Breakdowns\n\n")
+          (insert "These tables show the category breakdown for each month.\n\n")
+          
+          (dolist (month-data all-monthly-cat-data)
+            (let ((month (car month-data))
+                  (cat-data (cdr month-data)))
+              (when cat-data
+                (insert (format "*** %s Category Breakdown\n\n" month))
+                (insert "#+NAME: category-breakdown-")
+                (insert (replace-regexp-in-string "-" "" month))
+                (insert "\n")
+                (insert "| Category | Amount | Percentage |\n")
+                (insert "|---------+--------+------------|\n")
+                
+                ;; Calculate total for this month
+                (let ((month-total (gethash month bank-buddy-monthly-totals 0)))
+                  (when (> month-total 0)
+                    ;; Sort categories by amount
+                    (setq cat-data (sort cat-data (lambda (a b) (> (cdr a) (cdr b)))))
+                    (dolist (cat cat-data)
+                      (let* ((cat-code (car cat))
+                             (cat-name (cdr (assoc cat-code bank-buddy-category-names)))
+                             (amount (cdr cat))
+                             (percentage (* 100.0 (/ amount month-total))))
+                        (insert (format "| %s (%s) | %.2f | %.1f%% |\n"
+                                (or cat-name cat-code)
+                                cat-code
+                                amount
+                                percentage)))))
+                (insert "\n")))))
+      (insert "No monthly spending data available.\n")))))
 
 (defun bank-buddy-generate-subscriptions ()
   "Generate recurring subscriptions section."
