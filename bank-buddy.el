@@ -60,6 +60,16 @@
   :type 'number
   :group 'bank-buddy)
 
+(defcustom bank-buddy-monthly-spending-bar-width 80
+  "Length of the bar in characters of Monthly Spending Features."
+  :type 'number
+  :group 'bank-buddy)
+
+(defcustom bank-buddy-monthly-spending-max-bar-categories 6
+  "Limit number of categories to keep visual clean."
+  :type 'number
+  :group 'bank-buddy)
+
 (defvar bank-buddy-unmatched-transactions '()
   "List of transactions that matched only the catch-all pattern.")
 
@@ -212,7 +222,7 @@ BAR-WIDTH is the maximum width of the bar in characters."
          (cat-totals-hash (make-hash-table :test 'equal))
          (bar-text "")
          (num-categories-shown 0)
-         (max-categories-to-show 4)) ;; Limit number of categories to keep visual clean
+         (max-categories-to-show bank-buddy-monthly-spending-max-bar-categories)) ;; Limit number of categories to keep visual clean
     
     ;; Convert month's category totals to hash for easy lookup
     (dolist (cat-pair (bank-buddy-get-month-category-totals month))
@@ -685,7 +695,7 @@ This function runs in a separate process via async.el."
           ;; Sort the list representation for output
           (setq months-list (sort months-list (lambda (a b) (string< (car a) (car b)))))
           
-          (let ((bar-width 80)) ;; Wider bar to accommodate text-based visualization
+          (let ((bar-width bank-buddy-monthly-spending-bar-width)) ;; Wider bar to accommodate text-based visualization
             (dolist (month-data months-list)
               (let* ((month (car month-data))
                      (amount (cdr month-data))
