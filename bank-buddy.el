@@ -583,7 +583,7 @@ This function runs in a separate process via async.el."
                                   yearly-avg))
                   (setq counter (1+ counter))))))
 
-          (insert "\n\n#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results\n")
+          (insert "\n#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results\n")
           (insert "set terminal png size 800,600\n")
           (insert "set style data histogram\n")
           (insert "set style fill solid\n")
@@ -591,7 +591,7 @@ This function runs in a separate process via async.el."
           (insert "set xtics rotate by -45\n")
           (insert "set ylabel \"Amount\"\n")
           (insert "set title \"Top Spending Categories\"\n")
-          (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
+          (insert "plot data using 4:xtic(1) with boxes title \"Amount\"\n")
           (insert "#+end_src\n\n")
           
           (insert "#+ATTR_ORG: :width 600\n")
@@ -605,7 +605,7 @@ This function runs in a separate process via async.el."
       (insert "No category spending data available.\n"))))
 
 (defun bank-buddy-generate-top-merchants ()
-  "Generate top merchants section with monthly and yearly averages."
+  "Generate top merchants section with a comprehensive table."
   (let ((merchants-list '())
         (total-spending 0)
         (total-months 0)
@@ -645,28 +645,53 @@ This function runs in a separate process via async.el."
     (if merchants-list
         (progn
           ;; Add a summary section with overall totals
+          (insert (format "Analysis of merchant spending across %d months:\n\n" total-months))
           (insert (format "- *Total merchant spending:* £%.2f\n" total-spending))
           (insert (format "- *Monthly average (all merchants):* £%.2f\n" 
                           (/ total-spending (float total-months))))
           (insert (format "- *Yearly average (all merchants):* £%.2f\n\n" 
                           (* 12 (/ total-spending (float total-months)))))
-          (insert "Shown are the top retail/merchants with associated statistics\n\n")
-          ;; Detailed merchant breakdown
-          (let ((counter 1))
+          
+          ;; Create the table header
+          (insert "#+NAME: top-merchants\n")
+          (insert "| Merchant | Total Spend | Percentage | Monthly Avg | Yearly Avg |\n")
+          (insert "|---------+------------+------------+-------------+------------|\n")
+          
+          ;; Add rows for each merchant up to the limit
+          (let ((counter 0))
             (dolist (merchant merchants-list)
-              (when (<= counter bank-buddy-top-merchants)
-                (let* ((amount (cdr merchant))
+              (when (< counter bank-buddy-top-merchants)
+                (let* ((merchant-name (car merchant))
+                       (amount (cdr merchant))
+                       (percentage (* 100.0 (/ amount total-spending)))
                        (monthly-avg (/ amount (float total-months)))
-                       (yearly-avg (* 12 monthly-avg))
-                       (percent (* 100.0 (/ amount total-spending))))
-                  (insert (format "%d. *%s:* £%.2f (%.1f%%)\n"
-                                  counter
-                                  (car merchant)
+                       (yearly-avg (* 12 monthly-avg)))
+                  (insert (format "| %s | %11.2f | %10.1f%% | %11.2f | %10.2f |\n"
+                                  merchant-name
                                   amount
-                                  percent))
-                  (insert (format "   - Monthly avg: £%.2f, Yearly avg: £%.2f\n"
-                                  monthly-avg yearly-avg)))
-                (setq counter (1+ counter))))))
+                                  percentage
+                                  monthly-avg
+                                  yearly-avg))
+                  (setq counter (1+ counter))))))
+
+          (insert "\n#+begin_src gnuplot :var data=top-merchants :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results\n")
+          (insert "set terminal png size 800,600\n")
+          (insert "set style data histogram\n")
+          (insert "set style fill solid\n")
+          (insert "set boxwidth 0.8\n")
+          (insert "set xtics rotate by -45\n")
+          (insert "set ylabel \"Amount\"\n")
+          (insert "set title \"Top Spending Categories\"\n")
+          (insert "plot data using 4:xtic(1) with boxes title \"Amount\"\n")
+          (insert "#+end_src\n\n")
+          
+          (insert "#+ATTR_ORG: :width 600\n")
+          (insert "#+RESULTS:\n")
+          (insert "[[file:financial-report--top-merchants.png]]\n\n")
+          
+          ;; Add a note about averages
+          (insert "\n")
+          (insert "Monthly and yearly averages are calculated based on the total duration of the data.\n"))
       (insert "No merchant spending data available.\n"))))
 
 (defun bank-buddy-generate-monthly-spending ()
