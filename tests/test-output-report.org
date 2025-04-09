@@ -1,0 +1,242 @@
+#+title: Financial Report (Bank Buddy)
+#+subtitle: Data from test-bank-statement.csv
+#+date: 2025-04-07 20:39:03
+#+options: toc:2 num:nil
+#+startup: inlineimages showall
+
+* Summary Overview
+
+- *Total Transactions Analyzed:* 73
+- *Date Range:* 2024-01-05 to 2024-06-30 (176 days)
+- *Total Spending:* £4522.73
+- *Average Daily Spending:* £25.70
+- *Average Monthly Spending (approx):* £770.92
+
+* Transaction Size Distribution
+
+- *Under £10:* 8 transactions (11.0%)
+- *£10 to £50:* 38 transactions (52.1%)
+- *£50 to £100:* 18 transactions (24.7%)
+- *Over £100:* 9 transactions (12.3%)
+
+* Top Spending Categories
+
+** Summary
+
+- *Total spending:* £4522.73
+- *Monthly average (all categories):* £753.79
+- *Yearly average (all categories):* £9045.46
+
+** Category Breakdown
+
+1. *Personal (Katherine):* £800.00 (17.7%)
+   - Monthly avg: £133.33, Yearly avg: £1600.00
+2. *Food:* £793.79 (17.6%)
+   - Monthly avg: £132.30, Yearly avg: £1587.58
+3. *Housing:* £750.00 (16.6%)
+   - Monthly avg: £125.00, Yearly avg: £1500.00
+4. *Shopping:* £456.98 (10.1%)
+   - Monthly avg: £76.16, Yearly avg: £913.96
+5. *Utilities:* £352.44 (7.8%)
+   - Monthly avg: £58.74, Yearly avg: £704.88
+6. *Amazon:* £306.78 (6.8%)
+   - Monthly avg: £51.13, Yearly avg: £613.56
+7. *PayPal:* £227.93 (5.0%)
+   - Monthly avg: £37.99, Yearly avg: £455.86
+8. *Streaming:* £184.87 (4.1%)
+   - Monthly avg: £30.81, Yearly avg: £369.74
+9. *Cash Withdrawals:* £150.00 (3.3%)
+   - Monthly avg: £25.00, Yearly avg: £300.00
+10. *Web Services:* £120.00 (2.7%)
+   - Monthly avg: £20.00, Yearly avg: £240.00
+
+* Top 10 Merchants
+
+** Summary
+
+- *Total merchant spending:* £4522.73
+- *Monthly average (all merchants):* £753.79
+- *Yearly average (all merchants):* £9045.46
+
+** Merchant Breakdown
+
+1. *KATHERINE-ALLOWANCE:* £800.00 (17.7%)
+   - Monthly avg: £133.33, Yearly avg: £1600.00
+2. *NATWEST-BANK-REFERENCE-RENT:* £750.00 (16.6%)
+   - Monthly avg: £125.00, Yearly avg: £1500.00
+3. *VIRGIN-MEDIA-MONTHLY:* £327.50 (7.2%)
+   - Monthly avg: £54.58, Yearly avg: £655.00
+4. *AMAZON-PURCHASE:* £306.78 (6.8%)
+   - Monthly avg: £51.13, Yearly avg: £613.56
+5. *SAINSBURYS-GROCERIES:* £289.75 (6.4%)
+   - Monthly avg: £48.29, Yearly avg: £579.50
+6. *IKEA-FURNITURE:* £245.99 (5.4%)
+   - Monthly avg: £41.00, Yearly avg: £491.98
+7. *PAYPAL-TRANSFER:* £227.93 (5.0%)
+   - Monthly avg: £37.99, Yearly avg: £455.86
+8. *ASDA-GROCERIES:* £170.95 (3.8%)
+   - Monthly avg: £28.49, Yearly avg: £341.90
+9. *TESCO-GROCERIES:* £144.35 (3.2%)
+   - Monthly avg: £24.06, Yearly avg: £288.70
+10. *NEXT-RETAIL-LTD:* £125.00 (2.8%)
+   - Monthly avg: £20.83, Yearly avg: £250.00
+
+* Monthly Spending Patterns
+
+- *Highest Month:* 2024-03 (£1291.98)
+- *Lowest Month:* 2024-01 (£354.43)
+- *Average Monthly Spending:* £753.79
+
+** Monthly Spending Breakdown
+#+begin_src text
+2024-01: £354.43
+2024-02: £609.94
+2024-03: £1291.98
+2024-04: £808.76
+2024-05: £711.92
+2024-06: £745.70
+#+end_src
+
+* Recurring Subscriptions (Detected)
+
+Estimated monthly cost from detected recurring payments: *£13.99*
+(Note: Detection is based on pattern matching and frequency analysis, may not be exhaustive or perfectly accurate.)
+
+1. *Netflix:* £13.99/month
+
+* Unmatched Transactions
+
+The following transactions were only matched by the catch-all pattern (".*"). You may want to add specific patterns for these in `bank-buddy-cat-list-defines`.
+
+#+begin_src text
+SPOTIFY-PREMIUM
+#+end_src
+
+* Data Visualizations
+
+** Monthly Spending Trend
+
+This plot shows your spending over time.
+
+#+PLOT: title:"Monthly Spending Trend" ind:1 deps:(2) type:2d with:linespoints set:"grid" set:"ylabel 'Spending (£)'" set:"xdata time" set:"timefmt '%Y-%m'" set:"format x '%b\n%Y'" set:"xtics rotate by -45"
+#+NAME: monthly-spending-trend
+| Month    | Spending |
+|----------+----------|
+| 2024-01 | 354.43 |
+| 2024-02 | 609.94 |
+| 2024-03 | 1291.98 |
+| 2024-04 | 808.76 |
+| 2024-05 | 711.92 |
+| 2024-06 | 745.70 |
+
+
+#+begin_src gnuplot :var data=monthly-spending-trend :file financial-report--monthly-spending-trend.png :execute_on_open t :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Monthly Spending Trend"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--monthly-spending-trend.png]]
+
+** Top Spending Categories (Histogram)
+
+#+PLOT: title:"Top Spending Categories" ind:1 deps:(2) type:histogram with:histograms set:"style fill solid 0.8" set:"grid" set:"ylabel 'Amount (£)'" set:"xtic(1)" set:"xtics rotate by -45"
+#+NAME: top-spending-categories
+| Category        | Amount |
+|-----------------+--------|
+| Personal (Katherine) | 800.00 |
+| Food | 793.79 |
+| Housing | 750.00 |
+| Shopping | 456.98 |
+| Utilities | 352.44 |
+| Amazon | 306.78 |
+| PayPal | 227.93 |
+| Streaming | 184.87 |
+| Cash Withdrawals | 150.00 |
+| Web Services | 120.00 |
+
+
+#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Top Spending Categories"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--top-spending-categories.png]]
+
+** Transaction Size Distribution (Pie Chart)
+
+#+PLOT: title:"Transaction Size Distribution" ind:1 deps:(2) type:pie with:labels
+#+NAME: transaction-size-distribution
+| Range         | Count |
+|---------------+-------|
+| Under £10     | 8 |
+| £10 to £50    | 38 |
+| £50 to £100   | 18 |
+| Over £100     | 9 |
+
+
+#+begin_src gnuplot :var data=top-spending-categories :file financial-report--transaction-size-distribution.png :execute_on_open t :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Transaction Size Distribution"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--transaction-size-distribution.png]]
+
+** Estimated Monthly Subscription Cost Trend
+
+Estimated total cost per month based on detected recurring payments active during that month.
+
+#+PLOT: title:"Estimated Monthly Subscription Costs" ind:1 deps:(2) type:2d with:linespoints set:"grid" set:"ylabel 'Estimated Cost (£)'" set:"xdata time" set:"timefmt '%Y-%m'" set:"format x '%b\n%Y'" set:"xtics rotate by -45"
+#+NAME: monthly-subscription-costs
+| Month    | Est. Cost |
+|----------+-----------|
+| 2024-01 | 13.99 |
+| 2024-02 | 13.99 |
+| 2024-03 | 13.99 |
+| 2024-04 | 13.99 |
+| 2024-05 | 13.99 |
+| 2024-06 | 13.99 |
+
+
+#+begin_src gnuplot :var data=monthly-subscription-costs :file financial-report--monthly-subscription-costs.png :execute_on_open t :results file
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Monthly Subscription Costs"
+plot data using 2:xtic(1) with boxes title "Amount"
+#+end_src
+
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--monthly-subscription-costs.png]]
+
