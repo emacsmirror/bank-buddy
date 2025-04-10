@@ -226,14 +226,14 @@ Categories are ordered consistently based on global top spending categories."
     
     ;; Sort by month
     (setq all-monthly-cat-data 
-          (sort all-monthly-cat-data (lambda (a b) (string< (car a) (car b)))))
+          (sort all-monthly-cat-data (lambda (a b) (string< (car b) (car a)))))
     
     (setq month-count (length all-monthly-cat-data))
     
     (insert "** Monthly Category Breakdowns\n\n")
     (insert (format "Generated %d monthly breakdown files in: %s\n\n" 
                     month-count output-dir))
-    
+    (insert "#+ATTR_ORG: :width 600\n")    
     ;; Process each month
     (dolist (month-data all-monthly-cat-data)
       (let* ((month (car month-data))
@@ -293,9 +293,9 @@ Categories are ordered consistently based on global top spending categories."
           (call-process "gnuplot" nil nil nil plot-file)
           
           ;; Insert entry in report
-          (insert (format "*** %s - [[file:%s]]\n\n" 
-                          month (file-relative-name image-file 
-                                                   (file-name-directory output-file)))))))
+          (insert (format "[[file:%s]]\n" 
+                          (file-relative-name image-file 
+                                              (file-name-directory output-file)))))))
     
     ;; Add instructions for viewing
     (insert "*** Viewing Monthly Breakdowns Sequentially\n\n")
@@ -444,7 +444,7 @@ Categories are ordered consistently based on global top spending categories."
 
 (defun bank-buddy-generate-monthly-categories-table ()
   "Generate a comprehensive table with months as rows and top categories as columns."
-  (let* ((all-months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
+  (let* ((all-months (sort (hash-table-keys bank-buddy-monthly-totals) #'string>))
          (global-category-order (bank-buddy-get-global-category-order))
          ;; Limit to top N categories for clarity in the table
          (top-categories (cl-subseq global-category-order 
@@ -1139,7 +1139,7 @@ This function runs in a separate process via async.el."
           (insert "The length of each segment is proportional to its share of that month's spending.\n\n")
           (insert "#+begin_verse\n")
           ;; Sort the list representation for output
-          (setq months-list (sort months-list (lambda (a b) (string< (car a) (car b)))))
+          (setq months-list (sort months-list (lambda (a b) (string< (car b) (car a)))))
           
           (let ((bar-width bank-buddy-monthly-spending-bar-width)) ;; Wider bar to accommodate text-based visualization
             (dolist (month-data months-list)
