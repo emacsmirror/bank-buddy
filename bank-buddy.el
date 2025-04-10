@@ -177,6 +177,127 @@
   :type '(alist :key-type string :value-type string)
   :group 'bank-buddy)
 
+(defun bank-buddy-generate-monthly-categories-table ()
+  "Generate a comprehensive table with months as rows and top categories as columns."
+  (let* ((all-months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
+         (global-category-order (bank-buddy-get-global-category-order))
+         ;; Limit to top N categories for clarity in the table
+         (top-categories (cl-subseq global-category-order 
+                                    0 
+                                    (min (length global-category-order)
+                                         bank-buddy-top-spending-categories)))
+         (totals-by-category (make-hash-table :test 'equal)))
+
+    (insert "\n** Monthly Spending by Category\n\n")
+    (insert "This table shows spending breakdown for each month by top categories:\n\n")
+    
+    ;; Create the table header with categories as columns
+    (insert "#+NAME: monthly-categories-table\n")
+    (insert "| Month | Total ")
+    
+    ;; Add each category as a column
+    (dolist (cat top-categories)
+      (let ((cat-name (or (cdr (assoc cat bank-buddy-category-names)) cat)))
+        (insert (format "| %s (%s) " cat-name cat))))
+    
+    (insert "|\n|-")
+    
+    ;; Add the separator line
+    (dotimes (_ (+ 2 (length top-categories)))
+      (insert "+-"))
+    (insert "|\n")
+    
+    ;; Add rows for each month
+    (dolist (month all-months)
+      (let ((monthly-total (gethash month bank-buddy-monthly-totals 0)))
+        ;; Start the row with month and total
+        (insert (format "| %s | %.2f " month monthly-total))
+        
+        ;; Add each category's amount for this month
+        (dolist (cat top-categories)
+          (let* ((month-cat-key (concat month "-" cat))
+                 (cat-amount (gethash month-cat-key bank-buddy-cat-tot 0)))
+            ;; Track category totals for potential footer row
+            (puthash cat 
+                     (+ (gethash cat totals-by-category 0) cat-amount) 
+                     totals-by-category)
+            ;; Add to the table
+            (insert (format "| %.2f " cat-amount))))
+        
+        ;; Close the row
+        (insert "|\n")))
+    
+    ;; Add a totals row
+    (insert "|-")
+    (dotimes (_ (+ 2 (length top-categories)))
+      (insert "+-"))
+    (insert "|\n")
+    
+    (insert "| *Totals* | ")
+    (let ((grand-total 0))
+      ;; Calculate the grand total
+      (maphash (lambda (_month amount) 
+                 (setq grand-total (+ grand-total amount)))
+               bank-buddy-monthly-totals)
+      (insert (format "*%.2f* " grand-total))
+      
+      ;; Add category totals
+      (dolist (cat top-categories)
+        (let ((cat-total (gethash cat totals-by-category 0)))
+          (insert (format "| *%.2f* " cat-total))))
+      (insert "|\n\n"))
+    
+    ;; Add Org Babel block for gnuplot stacked histogram
+    (insert "*** Monthly Spending Visualization (Stacked Categories)\n\n")
+    (insert "The following visualization shows monthly spending with each bar stacked by category:\n\n")
+    
+    ;; Create a gnuplot script for stacked histogram
+    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-stacked.png :exports results\n")
+    (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
+    (insert "set style data histograms\n")
+    (insert "set style histogram rowstacked\n")
+    (insert "set boxwidth 0.75 relative\n")
+    (insert "set style fill solid 1.0 border -1\n")
+    (insert "set title 'Monthly Spending by Category'\n")
+    (insert "set xlabel 'Month'\n")
+    (insert "set ylabel 'Amount (£)'\n")
+    (insert "set xtics rotate by -45\n")
+    (insert "set key outside right top vertical\n")
+    (insert "set auto x\n")
+    (insert "set yrange [0:*]\n")
+    (insert "set grid ytics\n")
+    (insert "# Data format has Month and Total as first two columns, followed by categories\n")
+    (insert "plot for [i=3:(3+" (number-to-string (length top-categories)) "-1)] \\\n")
+    (insert "     data using i:xtic(1) title columnheader(i)\n")
+    (insert "#+end_src\n\n")
+    
+    (insert "#+ATTR_ORG: :width 800\n")
+    (insert "#+RESULTS:\n")
+    (insert "[[file:financial-report--monthly-spending-stacked.png]]\n")
+    
+    ;; Add alternate visualization using ggplot-style more vibrant colors
+    (insert "\n*** Monthly Spending with Individual Categories\n\n")
+    (insert "This plot shows each category separately across months for detailed comparison:\n\n")
+    
+    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-categories.png :exports results\n")
+    (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
+    (insert "set title 'Monthly Spending by Category'\n") 
+    (insert "set xlabel 'Month'\n")
+    (insert "set ylabel 'Amount (£)'\n")
+    (insert "set style data linespoints\n")
+    (insert "set key outside right top vertical\n")
+    (insert "set xtics rotate by -45\n")
+    (insert "set grid\n")
+    (insert "set auto x\n")
+    (insert "# Plot each category as a separate line\n")
+    (insert "plot for [i=3:(3+" (number-to-string (length top-categories)) "-1)] \\\n")
+    (insert "     data using 0:i:xtic(1) title columnheader(i) with linespoints pointtype i-2 lw 2\n")
+    (insert "#+end_src\n\n")
+    
+    (insert "#+ATTR_ORG: :width 800\n")
+    (insert "#+RESULTS:\n")
+    (insert "[[file:financial-report--monthly-spending-categories.png]]\n")))
+
 (defun bank-buddy-get-month-category-totals (month)
   "Get the totals for each category in the specified MONTH."
   (let ((cat-totals '()))
@@ -1034,6 +1155,8 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-summary-overview)
              (bank-buddy-generate-top-spending-categories)
              (bank-buddy-generate-monthly-spending)
+             ;; Add our new function here to insert the monthly categories table
+             (bank-buddy-generate-monthly-categories-table)
              (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-transaction-size-distribution)
