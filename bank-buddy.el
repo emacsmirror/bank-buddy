@@ -293,12 +293,12 @@ Categories are ordered consistently based on global top spending categories."
           (call-process "gnuplot" nil nil nil plot-file)
           
           ;; Insert entry in report
-          (insert (format "*** %s - [file:%s]\n\n" 
+          (insert (format "*** %s - [[file:%s]]\n\n" 
                           month (file-relative-name image-file 
                                                    (file-name-directory output-file)))))))
     
     ;; Add instructions for viewing
-    (insert "\n*** Viewing Monthly Breakdowns Sequentially\n\n")
+    (insert "*** Viewing Monthly Breakdowns Sequentially\n\n")
     (insert "To view the monthly breakdowns in sequence:\n\n")
     (insert "1. Open an image viewer that supports wildcard patterns\n")
     (insert (format "2. Navigate to: %s\n" output-dir))
@@ -432,7 +432,6 @@ Categories are ordered consistently based on global top spending categories."
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-transaction-size-distribution)
              (bank-buddy-generate-unmatched-transactions)
-             (insert "\n-----\n")
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
            (bank-buddy-show-progress 
@@ -518,7 +517,7 @@ Categories are ordered consistently based on global top spending categories."
     (insert "The following visualization shows monthly spending with each bar stacked by category:\n\n")
     
     ;; Create a gnuplot script for stacked histogram
-    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-stacked.png :exports results\n")
+    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-stacked.png :execute_on_open t :results file :exports results\n")
     (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
     (insert "set style data histograms\n")
     (insert "set style histogram rowstacked\n")
@@ -545,7 +544,7 @@ Categories are ordered consistently based on global top spending categories."
     (insert "\n*** Monthly Spending with Individual Categories\n\n")
     (insert "This plot shows each category separately across months for detailed comparison:\n\n")
     
-    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-categories.png :exports results\n")
+    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-categories.png :execute_on_open t :results file :exports results\n")
     (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
     (insert "set title 'Monthly Spending by Category'\n") 
     (insert "set xlabel 'Month'\n")
@@ -562,7 +561,7 @@ Categories are ordered consistently based on global top spending categories."
     
     (insert "#+ATTR_ORG: :width 800\n")
     (insert "#+RESULTS:\n")
-    (insert "[[file:financial-report--monthly-spending-categories.png]]\n")))
+    (insert "[[file:financial-report--monthly-spending-categories.png]]\n\n")))
 
 (defun bank-buddy-get-month-category-totals (month)
   "Get the totals for each category in the specified MONTH."
@@ -1061,7 +1060,7 @@ This function runs in a separate process via async.el."
                                   yearly-avg))
                   (setq counter (1+ counter))))))
 
-          (insert "\n#+begin_src gnuplot :var data=top-merchants :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results\n")
+          (insert "\n#+begin_src gnuplot :var data=top-merchants :file financial-report--top-merchants.png :execute_on_open t :results file :exports results\n")
           (insert "set terminal png size 800,600\n")
           (insert "set style data histogram\n")
           (insert "set style fill solid\n")
@@ -1077,7 +1076,6 @@ This function runs in a separate process via async.el."
           (insert "[[file:financial-report--top-merchants.png]]\n\n")
           
           ;; Add a note about averages
-          (insert "\n")
           (insert "Monthly and yearly averages are calculated based on the total duration of the data.\n"))
       (insert "No merchant spending data available.\n"))))
 
@@ -1152,67 +1150,9 @@ This function runs in a separate process via async.el."
                 (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
           (insert "#+end_verse\n\n")
           
-          ;; Add monthly spending data table
-          (insert "** Monthly Spending Data Table\n\n")
-          (insert "This table provides structured data for each month's spending, suitable for plotting.\n\n")
-          
-          ;; Create main monthly spending table
-          (insert "#+NAME: monthly-spending-data\n")
-          (insert "| Month | Total Spending |\n")
-          (insert "|-------+----------------|\n")
-          (dolist (month-data (sort months-list (lambda (a b) (string< (car a) (car b)))))
-            (insert (format "| %s | %14.2f |\n" (car month-data) (cdr month-data))))
-          (insert "\n")
-
-          (insert "\n#+begin_src gnuplot :var data=monthly-spending-data :file financial-report--monthly-spending-data.png :execute_on_open t :results file :exports results\n")
-          (insert "set terminal png size 800,600\n")
-          (insert "set style data histogram\n")
-          (insert "set style fill solid\n")
-          (insert "set boxwidth 0.8\n")
-          (insert "set xtics rotate by -45\n")
-          (insert "set ylabel \"Amount\"\n")
-          (insert "set title \"Top Spending Categories\"\n")
-          (insert "plot data using 2:xtic(1) with boxes title \"Amount\"\n")
-          (insert "#+end_src\n\n")
-          
-          (insert "#+ATTR_ORG: :width 600\n")
-          (insert "#+RESULTS:\n")
-          (insert "[[file:financial-report--monthly-spending-data.png]]\n\n")
-          
           ;; Create category breakdown tables for each month
           (setq all-monthly-cat-data (sort all-monthly-cat-data 
                                            (lambda (a b) (string< (car a) (car b)))))
-          
-          (insert "** Monthly Category Breakdowns\n\n")
-          (insert "These tables show the category breakdown for each month.\n\n")
-          
-          (dolist (month-data all-monthly-cat-data)
-            (let ((month (car month-data))
-                  (cat-data (cdr month-data)))
-              (when cat-data
-                (insert (format "*** %s Category Breakdown\n\n" month))
-                (insert "#+NAME: category-breakdown-")
-                (insert (replace-regexp-in-string "-" "" month))
-                (insert "\n")
-                (insert "| Category | Amount | Percentage |\n")
-                (insert "|---------+--------+------------|\n")
-                
-                ;; Calculate total for this month
-                (let ((month-total (gethash month bank-buddy-monthly-totals 0)))
-                  (when (> month-total 0)
-                    ;; Sort categories by amount
-                    (setq cat-data (sort cat-data (lambda (a b) (> (cdr a) (cdr b)))))
-                    (dolist (cat cat-data)
-                      (let* ((cat-code (car cat))
-                             (cat-name (cdr (assoc cat-code bank-buddy-category-names)))
-                             (amount (cdr cat))
-                             (percentage (* 100.0 (/ amount month-total))))
-                        (insert (format "| %s (%s) | %.2f | %.1f%% |\n"
-                                (or cat-name cat-code)
-                                cat-code
-                                amount
-                                percentage)))))
-                (insert "\n")))))
       (insert "No monthly spending data available.\n")))))
 
 (defun bank-buddy-generate-subscriptions ()
