@@ -516,9 +516,11 @@ Categories are ordered consistently based on global top spending categories."
     (insert "set auto x\n")
     (insert "set yrange [0:*]\n")
     (insert "set grid ytics\n")
-    (insert "# Data format has Month and Total as first two columns, followed by categories\n")
     (insert "plot for [i=3:(3+" (number-to-string (length top-categories)) "-1)] \\\n")
-    (insert "     data using i:xtic(1) title columnheader(i)\n")
+    (insert "     data using i:xtic(1) title columnheader(i), \\\n")
+    (insert "data using 0:2 with linespoints \\\n")
+    (insert "linecolor rgb \"#000000\" linewidth 3 pointtype 7 pointsize 1.5 title \"Total\"\n")
+
     (insert "#+end_src\n\n")
     
     (insert "#+ATTR_ORG: :width 800\n")
