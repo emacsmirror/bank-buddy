@@ -70,6 +70,12 @@
   :type 'number
   :group 'bank-buddy)
 
+(defcustom bank-buddy-output-directory nil
+  "Directory to save report images. If nil, uses the directory of the output file."
+  :type '(choice (const :tag "Use output file directory" nil)
+                 (directory :tag "Custom directory"))
+  :group 'bank-buddy)
+
 (defvar bank-buddy-unmatched-transactions '()
   "List of transactions that matched only the catch-all pattern.")
 
@@ -176,6 +182,105 @@
   "Patterns to identify specific subscriptions."
   :type '(alist :key-type string :value-type string)
   :group 'bank-buddy)
+
+(defun bank-buddy-ensure-directory (dir)
+  "Ensure DIR exists, creating it if necessary."
+  (unless (file-exists-p dir)
+    (make-directory dir t))
+  dir)
+
+(defun bank-buddy-generate-monthly-category-breakdowns (output-dir)
+  "Generate separate gnuplot images for each month's category breakdown.
+Images are saved in OUTPUT-DIR with filenames ordered by month."
+  (let ((all-monthly-cat-data '())
+        (month-count 0))
+    
+    ;; Get all months and their category data
+    (maphash
+     (lambda (key value)
+       (when (string-match "^\\([0-9]\\{4\\}-[0-9]\\{2\\}\\)-\\([^-]+\\)$" key)
+         (let ((month (match-string 1 key))
+               (category (match-string 2 key))
+               (amount value))
+           ;; Find or create entry for this month
+           (let ((month-entry (assoc month all-monthly-cat-data)))
+             (if month-entry
+                 ;; Add to existing month
+                 (setcdr month-entry 
+                         (cons (cons category amount) (cdr month-entry)))
+               ;; Create new month entry
+               (push (cons month (list (cons category amount))) 
+                     all-monthly-cat-data))))))
+     bank-buddy-cat-tot)
+    
+    ;; Sort by month
+    (setq all-monthly-cat-data 
+          (sort all-monthly-cat-data (lambda (a b) (string< (car a) (car b)))))
+    
+    (setq month-count (length all-monthly-cat-data))
+    
+    (insert "** Monthly Category Breakdowns\n\n")
+    (insert (format "Generated %d monthly breakdown files in: %s\n\n" 
+                    month-count output-dir))
+    
+    ;; Process each month
+    (dolist (month-data all-monthly-cat-data)
+      (let* ((month (car month-data))
+             (cat-data (cdr month-data))
+             (month-total (gethash month bank-buddy-monthly-totals 0))
+             (month-safe (replace-regexp-in-string "-" "" month))
+             (data-file (expand-file-name (format "data-breakdown-%s.txt" month-safe) output-dir))
+             (image-file (expand-file-name (format "plot-%s-breakdown.png" month-safe) output-dir))
+             (plot-file (expand-file-name (format "plot-%s-breakdown.gp" month-safe) output-dir)))
+        
+        (when (> month-total 0)
+          ;; Sort categories by amount
+          (setq cat-data (sort cat-data (lambda (a b) (> (cdr a) (cdr b)))))
+          
+          ;; Create data file
+          (with-temp-file data-file
+            (insert "# Category Amount Percentage\n")
+            (dolist (cat cat-data)
+              (let* ((cat-code (car cat))
+                     (cat-name (or (cdr (assoc cat-code bank-buddy-category-names)) cat-code))
+                     (amount (cdr cat))
+                     (percentage (* 100.0 (/ amount month-total))))
+                (insert (format "\"%s (%s)\" %.2f %.1f\n" 
+                                cat-name cat-code amount percentage)))))
+          
+          ;; Create gnuplot script
+          (with-temp-file plot-file
+            (insert (format "set terminal png size 800,600 enhanced font 'Verdana,10'\n"))
+            (insert (format "set output '%s'\n" 
+                            (replace-regexp-in-string "\\\\" "\\\\\\\\" image-file)))
+            (insert "set style data histogram\n")
+            (insert "set style fill solid 0.8 border -1\n")
+            (insert "set xtics rotate by -45\n")
+            (insert "set key off\n")
+            (insert (format "set title 'Category Breakdown for %s (Total: £%.2f)'\n" 
+                            month month-total))
+            (insert "set ylabel 'Amount (£)'\n")
+            (insert "set yrange [0:*]\n")
+            (insert "set grid y\n")
+            (insert "set boxwidth 0.8 relative\n")
+            (insert (format "plot '%s' using 2:xtic(1) with boxes lc rgb '#4169E1'\n"
+                            (replace-regexp-in-string "\\\\" "\\\\\\\\" data-file))))
+          
+          ;; Run gnuplot
+          (call-process "gnuplot" nil nil nil plot-file)
+          
+          ;; Insert entry in report
+          (insert (format "*** %s - [file:%s]\n\n" 
+                          month (file-relative-name image-file 
+                                                   (file-name-directory output-file)))))))
+    
+    ;; Add instructions for viewing
+    (insert "\n*** Viewing Monthly Breakdowns Sequentially\n\n")
+    (insert "To view the monthly breakdowns in sequence:\n\n")
+    (insert "1. Open an image viewer that supports wildcard patterns\n")
+    (insert (format "2. Navigate to: %s\n" output-dir))
+    (insert "3. Open the pattern: plot-*-breakdown.png\n\n")
+    (insert "Many image viewers will allow you to step through these images in chronological order.\n")))
 
 (defun bank-buddy-generate-monthly-categories-table ()
   "Generate a comprehensive table with months as rows and top categories as columns."
@@ -1104,7 +1209,8 @@ This function runs in a separate process via async.el."
      ;; Extract file paths from the result
      (let ((csv-file (plist-get result :csv-file))
            (output-file (plist-get result :output-file))
-           (worker-err (plist-get result :error)))
+           (worker-err (plist-get result :error))
+           (output-dir nil))
        
        (if worker-err
            ;; Handle worker-reported error
@@ -1144,6 +1250,14 @@ This function runs in a separate process via async.el."
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
            
+           ;; Determine output directory for images
+           (setq output-dir 
+                 (bank-buddy-ensure-directory 
+                  (expand-file-name 
+                   "bank-buddy-monthly-plots"
+                   (or bank-buddy-output-directory 
+                       (file-name-directory output-file)))))
+           
            ;; Generate the report content in a temp buffer
            (with-temp-buffer
              (org-mode)
@@ -1157,6 +1271,8 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-monthly-spending)
              ;; Add our new function here to insert the monthly categories table
              (bank-buddy-generate-monthly-categories-table)
+             ;; Add the NEW monthly breakdown plots
+             (bank-buddy-generate-monthly-category-breakdowns output-dir)
              (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-transaction-size-distribution)
@@ -1164,11 +1280,31 @@ This function runs in a separate process via async.el."
              (insert "\n-----\n")
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
-           (bank-buddy-show-progress (format "Report generated successfully: %s" output-file) t)
+           (bank-buddy-show-progress 
+            (format "Report generated successfully: %s\nMonthly plots saved to: %s" 
+                    output-file output-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
              (find-file output-file)))))))
-  )
+   )
+
+(defun bank-buddy-view-monthly-plots ()
+  "Open the directory containing the monthly breakdown plots."
+  (interactive)
+  (let* ((output-file (if (boundp 'output-file) output-file nil))
+         (plot-dir 
+          (expand-file-name 
+           "bank-buddy-monthly-plots"
+           (or bank-buddy-output-directory 
+               (if output-file (file-name-directory output-file)
+                 default-directory)))))
+    
+    (if (file-directory-p plot-dir)
+        (progn
+          (when (fboundp 'dired)
+            (dired plot-dir))
+          (message "Monthly plots are in: %s" plot-dir))
+      (message "Monthly plots directory not found: %s" plot-dir))))
 
 (defun bank-buddy-view-unmatched-transactions ()
   "View the list of transactions that weren't matched by specific patterns."
