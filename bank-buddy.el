@@ -463,13 +463,13 @@ Categories are ordered consistently based on global top spending categories."
     ;; Add each category as a column
     (dolist (cat top-categories)
       (let ((cat-name (or (cdr (assoc cat bank-buddy-category-names)) cat)))
-        (insert (format "| %s (%s) " cat-name cat))))
+        (insert (format "| %s " cat))))
     
-    (insert "|\n|-")
+    ;; (insert "|\n|-")
     
     ;; Add the separator line
-    (dotimes (_ (+ 2 (length top-categories)))
-      (insert "+-"))
+    ;; (dotimes (_ (+ 2 (length top-categories)))
+    ;;   (insert "+-"))
     (insert "|\n")
     
     ;; Add rows for each month
@@ -492,32 +492,17 @@ Categories are ordered consistently based on global top spending categories."
         ;; Close the row
         (insert "|\n")))
     
-    ;; Add a totals row
-    (insert "|-")
-    (dotimes (_ (+ 2 (length top-categories)))
-      (insert "+-"))
-    (insert "|\n")
-    
-    (insert "| *Totals* | ")
-    (let ((grand-total 0))
-      ;; Calculate the grand total
-      (maphash (lambda (_month amount) 
-                 (setq grand-total (+ grand-total amount)))
-               bank-buddy-monthly-totals)
-      (insert (format "*%.2f* " grand-total))
-      
-      ;; Add category totals
-      (dolist (cat top-categories)
-        (let ((cat-total (gethash cat totals-by-category 0)))
-          (insert (format "| *%.2f* " cat-total))))
-      (insert "|\n\n"))
-    
     ;; Add Org Babel block for gnuplot stacked histogram
-    (insert "*** Monthly Spending Visualization (Stacked Categories)\n\n")
+    (insert "\n*** Monthly Spending Visualization (Stacked Categories)\n\n")
     (insert "The following visualization shows monthly spending with each bar stacked by category:\n\n")
+
+    (insert "#+name: reverse-data\n")
+    (insert "#+begin_src emacs-lisp :var data=monthly-categories-table\n")
+    (insert "  (cons (car data) (reverse (cdr data)))\n")
+    (insert "#+end_src\n\n")
     
     ;; Create a gnuplot script for stacked histogram
-    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-stacked.png :execute_on_open t :results file :exports results\n")
+    (insert "#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-stacked.png :execute_on_open t :results file :exports results\n")
     (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
     (insert "set style data histograms\n")
     (insert "set style histogram rowstacked\n")
@@ -544,7 +529,7 @@ Categories are ordered consistently based on global top spending categories."
     (insert "\n*** Monthly Spending with Individual Categories\n\n")
     (insert "This plot shows each category separately across months for detailed comparison:\n\n")
     
-    (insert "#+begin_src gnuplot :var data=monthly-categories-table :file financial-report--monthly-spending-categories.png :execute_on_open t :results file :exports results\n")
+    (insert "#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-categories.png :execute_on_open t :results file :exports results\n")
     (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
     (insert "set title 'Monthly Spending by Category'\n") 
     (insert "set xlabel 'Month'\n")
