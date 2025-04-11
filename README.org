@@ -8,6 +8,10 @@
 
 * Welcome to Bank-Buddy: Your Financial Analysis Companion for Emacs
 
+#+attr_org: :width 300px
+#+attr_html: :width 100%
+[[file:img/bank-buddy-banner.jpg]]
+
 Bank Buddy is an Emacs package that provides comprehensive financial analysis and reporting capabilities for your bank statements. It processes CSV bank statement data, categorizes transactions using customizable patterns, and generates detailed reports in Org-mode format.
 
 * Key Features
