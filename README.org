@@ -27,7 +27,17 @@ Bank Buddy is an Emacs package that provides comprehensive financial analysis an
 
 * Screenshots
 
-*Insert screenshots here*
+** Monthly Spending categories
+
+#+attr_org: :width 300px
+#+attr_html: :width 100%
+[[file:img/financial-report--monthly-spending-categories.png]]
+
+** Monthly Spending categories (stacked)
+
+#+attr_org: :width 300px
+#+attr_html: :width 100%
+[[file:img/financial-report--monthly-spending-stacked.png]]
 
 * Whats New
 
@@ -142,17 +152,42 @@ When processing is complete, you'll be asked if you want to open the generated r
 
 ** Understanding the Report
 
-The report is generated as an Org-mode file with sections including:
+A typical Bank Buddy report includes:
 
-1. *Summary Overview*: Shows transaction count, date range, total spending, and average spending
-2. *Top Spending Categories*: Lists the highest spending categories with percentages and averages
-3. *Monthly Spending Patterns*: Displays spending over time with a visual category breakdown
-4. *Top Merchants*: Lists merchants where you spend the most money
-5. *Recurring Subscriptions*: Identifies and estimates costs of regular payments
-6. *Transaction Size Distribution*: Shows the distribution of transaction amounts
-7. *Unmatched Transactions*: Lists transactions that weren't matched by specific patterns
-8. *Data Visualizations*: Charts and graphs of your financial data
+*** Summary Overview
+- Total transactions analyzed
+- Date range
+- Total, average daily, and weekly spending
 
+*** Top Spending Categories
+- Ranked list of spending categories
+- Total amount, percentage, and monthly/yearly averages
+
+*** Monthly Spending Patterns
+- Month-by-month spending visualization
+- Category breakdown for each month
+- Highest and lowest spending months
+
+*** Monthly Category Breakdowns
+- Detailed charts for each month showing spending by category
+- Consistent color coding across months for easy comparison
+
+*** Top Merchants
+- Your highest-spending merchants
+- Total amount, percentage, and monthly/yearly averages
+
+*** Recurring Subscriptions
+- Detected recurring payments
+- Estimated monthly cost
+- Frequency analysis (weekly, bi-weekly, monthly, annual)
+
+*** Transaction Size Distribution
+- Analysis of transaction sizes (under £10, £10-50, £50-100, over £100)
+
+*** Unmatched Transactions
+- List of transactions that didn't match specific categories
+- Suggested patterns to add to your customization
+  
 ** Managing Transaction Categories
 
 Bank Buddy comes with predefined category patterns, but you'll likely want to customize these for your personal transactions. The package includes an interactive mode for managing categories.
@@ -205,6 +240,32 @@ M-x bank-buddy-view-unmatched-transactions
 #+end_src
 
 This opens a buffer showing transactions that weren't matched by specific patterns, with suggestions for adding them to your category definitions.
+
+* Example Workflow
+
+- *Generate Initial Report*
+   #+begin_src 
+   M-x bank-buddy-generate-report
+   #+end_src
+
+- *Review Unmatched Transactions*
+   Navigate to the "Unmatched Transactions" section of the report.
+
+- *Categorize Transactions*
+   - Place cursor on an unmatched transaction
+   - =C-c C-a= to add it to a category
+   - Choose an existing category or create a new one
+
+- *Regenerate Report*
+   - =C-c C-r= to see your changes
+
+- *Save Category Definitions*
+   When prompted, choose to save your category definitions to your init file.
+
+- *View Monthly Plots*
+   #+begin_src 
+   M-x bank-buddy-view-monthly-plots
+   #+end_src
 
 * Customization
 
@@ -287,6 +348,14 @@ When viewing a report with =bank-buddy-cat-mode= enabled:
 
 - =C-c C-a=: Add the transaction at point to a category
 - =C-c C-r=: Regenerate the report with current category definitions
+
+* Caveats and Tips
+
+- *CSV Format*: Bank Buddy expects a CSV with date, description, and amount columns
+- *Performance*: For very large CSV files (10K+ rows), the async processing helps but may still take time
+- *Categorization*: Start with broad patterns and refine as needed
+- *Visualization*: For best results, install Gnuplot for chart generation
+- *Saving Patterns*: Always save your category patterns to persist between sessions
 
 * Comparison with Other Financial Packages
 
