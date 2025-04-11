@@ -5,7 +5,7 @@
   :load-path "~/source/repos/bank-buddy")
 
 ;; 2. Generate a financial report from a CSV file
-(bank-buddy-generate-report "bank-statement.csv" "financial-report.org")
+(bank-buddy-generate-report "test-bank-statement.csv" "financial-report.org")
 
 ;; 3. Customization options
 ;; Exclude large transactions (over £10,000)
