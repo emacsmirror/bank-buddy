@@ -1,15 +1,15 @@
 ;;; bank-buddy-cat-mode.el --- Category enhancement mode for bank-buddy -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2025 Your Name
-;; Author: Your Name <your-email@example.com>
-;; Version: 1.0
+;;
+;; Copyright (C) 2025 James Dyer
+;; Author: James Dyer <captainflasmr@gmail.com>
+;; Version: 0.1.0
 ;; Package-Requires: ((emacs "26.1") (bank-buddy "1.1") (async "1.9.4"))
-;; Keywords: extensions
-
+;; Keywords: finance, budget, reporting
+;;
 ;;; Commentary:
 ;;
 ;; This package provides an interactive mode for managing transaction
-;; categorization in the bank-buddy package. It allows users to:
+;; categorization in the bank-buddy package.  It allows users to:
 ;;
 ;; - Quickly select unmatched transactions from a report
 ;; - Add them to the category definitions
@@ -21,7 +21,6 @@
 
 ;;; Code:
 
-;; (require 'bank-buddy)
 (require 'org)
 (require 'cl-lib)
 
@@ -59,11 +58,11 @@ category definitions and regenerate reports to see the effects.
     (bank-buddy-cat-mode-teardown)))
 
 (defun bank-buddy-cat-mode-setup ()
-  "Setup for bank-buddy-cat-mode."
+  "Setup for `bank-buddy-cat-mode'."
   (message "Bank Buddy Category mode enabled. Use C-c C-a to add patterns, C-c C-r to regenerate report."))
 
 (defun bank-buddy-cat-mode-teardown ()
-  "Teardown for bank-buddy-cat-mode."
+  "Teardown for `bank-buddy-cat-mode'."
   (message "Bank Buddy Category mode disabled."))
 
 (defun bank-buddy-cat-detect-csv-file ()
@@ -94,7 +93,7 @@ Returns the selected category code."
   (let* ((categories (bank-buddy-cat-get-existing-categories))
          (category-choices
           (mapcar (lambda (code)
-                    (cons (format "%s (%s)" 
+                    (cons (format "%s (%s)"
                                  (bank-buddy-cat-get-category-name code)
                                  code)
                           code))
@@ -105,9 +104,9 @@ Returns the selected category code."
             (lambda (cat)
               (let ((code (cdr (assoc cat category-choices))))
                 (format " - %s" (bank-buddy-cat-get-category-name code))))))
-         (choice (completing-read 
-                  (format "Category for \"%s\" [%s]: " 
-                          pattern 
+         (choice (completing-read
+                  (format "Category for \"%s\" [%s]: "
+                          pattern
                           (bank-buddy-cat-get-category-name initial))
                   category-choices
                   nil ; predicate
@@ -130,7 +129,7 @@ Returns the selected category code."
 This command should be used when the point is in an unmatched transaction
 in the bank-buddy report."
   (interactive)
-  (save-excursion  
+  (save-excursion
     ;; Check if we're in a bank-buddy report
     (unless (derived-mode-p 'org-mode)
       (user-error "This command should be used in an org-mode bank-buddy report"))
@@ -138,8 +137,8 @@ in the bank-buddy report."
     ;; Get selected text or current line if no selection
     (let ((pattern (if (use-region-p)
                        (buffer-substring-no-properties (region-beginning) (region-end))
-                     (buffer-substring-no-properties 
-                      (line-beginning-position) 
+                     (buffer-substring-no-properties
+                      (line-beginning-position)
                       (line-end-position)))))
       
       ;; Clean up the pattern - remove any leading/trailing whitespace or quotes
@@ -189,21 +188,21 @@ in the bank-buddy report."
             (bank-buddy-cat-regenerate-report)))))))
 
 (defun bank-buddy-cat-save-to-init-file ()
-  "Save the current bank-buddy-cat-list-defines to the user's init file."
+  "Save the current `bank-buddy-cat-list-defines' to the user's init file."
   (interactive)
   
   ;; Determine which file to save to
   (let* ((init-file (or user-init-file "~/.emacs"))
-         (file-to-use 
-          (read-file-name 
-           "Save to init file: " 
+         (file-to-use
+          (read-file-name
+           "Save to init file: "
            (file-name-directory init-file)
            nil nil
            (file-name-nondirectory init-file))))
     
     ;; If the file doesn't exist, create it
     (unless (file-exists-p file-to-use)
-      (when (y-or-n-p (format "File %s doesn't exist. Create it? " file-to-use))
+      (when (y-or-n-p (format "File %s doesn't exist.  Create it? " file-to-use))
         (write-region "" nil file-to-use)))
     
     ;; Check that the file exists
@@ -211,7 +210,7 @@ in the bank-buddy report."
         (user-error "Cannot save to non-existent file %s" file-to-use)
       
       ;; Generate the elisp code to set the custom variable
-      (let ((elisp-code 
+      (let ((elisp-code
              (format "(customize-set-variable 'bank-buddy-cat-list-defines\n  '%S)\n"
                      bank-buddy-cat-list-defines)))
         
@@ -238,7 +237,7 @@ in the bank-buddy report."
 (defun bank-buddy-cat-regenerate-report ()
   "Regenerate the bank-buddy report using the current CSV file."
   (interactive)
-  (save-excursion  
+  (save-excursion
   ;; Check if we're in a bank-buddy report
   (unless (derived-mode-p 'org-mode)
     (user-error "This command should be used in an org-mode bank-buddy report"))
@@ -268,7 +267,7 @@ in the bank-buddy report."
       (let ((pos (point)))
         
         ;; Generate the report
-        (bank-buddy-generate-report 
+        (bank-buddy-generate-report
          bank-buddy-cat-original-csv-file
          bank-buddy-cat-original-report-file)
         
@@ -300,7 +299,7 @@ in the bank-buddy report."
 
 ;; Auto-enable for bank-buddy reports
 (defun bank-buddy-cat-maybe-enable ()
-  "Enable bank-buddy-cat-mode if this looks like a bank-buddy report."
+  "Enable `bank-buddy-cat-mode' if this look like a bank-buddy report."
   (when (and (derived-mode-p 'org-mode)
              (buffer-file-name)
              (save-excursion

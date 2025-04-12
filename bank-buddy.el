@@ -1,17 +1,31 @@
-;;; bank-buddy.el --- Enhanced financial analysis and reporting for Emacs
-
-;; Copyright (C) 2025 Your Name
-;; Author: Your Name <your-email@example.com>
+;;; bank-buddy.el --- Financial analysis and reporting for Emacs
+;;
+;; Copyright (C) 2025 James Dyer
+;; Author: James Dyer <captainflasmr@gmail.com>
 ;; Version: 0.1.1
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
 ;; Keywords: finance, budget, reporting
 ;; URL: https://github.com/captainflasmr/bank-buddy
-
+;;
+;; This file is not part of GNU Emacs.
+;;
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or (at
+;; your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+;;
 ;;; Commentary:
 ;;
-;; This package provides enhanced financial analysis and reporting capabilities
-;; for bank statement data. It builds on existing categorization functionality
-;; to provide comprehensive financial reports including:
+;; This package provides financial analysis and reporting capabilities
+;; for bank statement data, it includes:
 ;;
 ;; - Transaction summaries and overviews
 ;; - Spending category analysis
@@ -21,9 +35,17 @@
 ;;
 ;; The package reads CSV bank statement data *asynchronously*, categorizes
 ;; transactions, and generates detailed reports in Org-mode format.
-;; The CSV parsing and processing happens in a background process to avoid
-;; blocking Emacs.
-
+;;
+;;; Quick Start
+;;
+;;  (use-package bank-buddy)
+;;
+;;  1. Export your bank statement as a CSV file
+;;  2. Run: =M-x bank-buddy-generate-report=
+;;  3. Select your CSV file
+;;  4. Choose where to save the Org-mode report
+;;  5. Open the generated report
+;;
 ;;; Code:
 
 (require 'bank-buddy-cat-mode)
@@ -70,7 +92,7 @@
   :group 'bank-buddy)
 
 (defcustom bank-buddy-output-directory nil
-  "Directory to save report images. If nil, uses the directory of the output file."
+  "Directory to save report images.  If nil, uses the directory of the output file."
   :type '(choice (const :tag "Use output file directory" nil)
                  (directory :tag "Custom directory"))
   :group 'bank-buddy)
@@ -82,28 +104,28 @@
   "The highest month amount.")
 
 (defvar bank-buddy-payments '()
-  "List of parsed payment transactions. Populated by async callback.")
+  "List of parsed payment transactions.  Populated by async callback.")
 
 (defvar bank-buddy-cat-tot (make-hash-table :test 'equal)
-  "Hash table storing category totals. Populated by async callback.")
+  "Hash table storing category totals.  Populated by async callback.")
 
 (defvar bank-buddy-merchants (make-hash-table :test 'equal)
-  "Hash table storing merchant totals. Populated by async callback.")
+  "Hash table storing merchant totals.  Populated by async callback.")
 
 (defvar bank-buddy-monthly-totals (make-hash-table :test 'equal)
-  "Hash table storing monthly spending totals. Populated by async callback.")
+  "Hash table storing monthly spending totals.  Populated by async callback.")
 
 (defvar bank-buddy-txn-size-dist (make-hash-table :test 'equal)
-  "Hash table for tracking transaction size distribution. Populated by async callback.")
+  "Hash table for tracking transaction size distribution.  Populated by async callback.")
 
 (defvar bank-buddy-subs (make-hash-table :test 'equal)
-  "Hash table for tracking potential subscriptions. Populated by async callback.")
+  "Hash table for tracking potential subscriptions.  Populated by async callback.")
 
 (defvar bank-buddy-date-first nil
-  "First transaction date. Populated by async callback.")
+  "First transaction date.  Populated by async callback.")
 
 (defvar bank-buddy-date-last nil
-  "Last transaction date. Populated by async callback.")
+  "Last transaction date.  Populated by async callback.")
 
 ;; Category mappings
 (defcustom bank-buddy-cat-list-defines
@@ -295,9 +317,9 @@ Categories are ordered consistently based on global top spending categories."
         (top-categories nil))
     
     ;; Get top categories list limited by user setting
-    (setq top-categories 
-          (cl-subseq global-category-order 
-                      0 
+    (setq top-categories
+          (cl-subseq global-category-order
+                      0
                       (min (length global-category-order)
                            bank-buddy-top-spending-categories)))
     
@@ -312,23 +334,23 @@ Categories are ordered consistently based on global top spending categories."
            (let ((month-entry (assoc month all-monthly-cat-data)))
              (if month-entry
                  ;; Add to existing month
-                 (setcdr month-entry 
+                 (setcdr month-entry
                          (cons (cons category amount) (cdr month-entry)))
                ;; Create new month entry
-               (push (cons month (list (cons category amount))) 
+               (push (cons month (list (cons category amount)))
                      all-monthly-cat-data))))))
      bank-buddy-cat-tot)
     
     ;; Sort by month
-    (setq all-monthly-cat-data 
+    (setq all-monthly-cat-data
           (sort all-monthly-cat-data (lambda (a b) (string< (car b) (car a)))))
     
     (setq month-count (length all-monthly-cat-data))
     
     (insert "** Monthly Category Breakdowns\n\n")
-    (insert (format "Generated %d monthly breakdown files in: %s\n\n" 
+    (insert (format "Generated %d monthly breakdown files in: %s\n\n"
                     month-count output-dir))
-    (insert "#+ATTR_ORG: :width 600\n")    
+    (insert "#+ATTR_ORG: :width 600\n")
     ;; Process each month
     (dolist (month-data all-monthly-cat-data)
       (let* ((month (car month-data))
@@ -360,22 +382,22 @@ Categories are ordered consistently based on global top spending categories."
               (let* ((cat-code (car cat))
                      (cat-name (or (cdr (assoc cat-code bank-buddy-category-names)) cat-code))
                      (amount (cdr cat))
-                     (percentage (if (> month-total 0) 
-                                     (* 100.0 (/ amount month-total)) 
+                     (percentage (if (> month-total 0)
+                                     (* 100.0 (/ amount month-total))
                                    0)))
-                (insert (format "\"%s (%s)\" %.2f %.1f\n" 
+                (insert (format "\"%s (%s)\" %.2f %.1f\n"
                                 cat-name cat-code amount percentage)))))
           
           ;; Create gnuplot script
           (with-temp-file plot-file
             (insert (format "set terminal png size 800,600 enhanced font 'Verdana,10'\n"))
-            (insert (format "set output '%s'\n" 
+            (insert (format "set output '%s'\n"
                             (replace-regexp-in-string "\\\\" "\\\\\\\\" image-file)))
             (insert "set style data histogram\n")
             (insert "set style fill solid 0.8 border -1\n")
             (insert "set xtics rotate by -45\n")
             (insert "set key off\n")
-            (insert (format "set title 'Category Breakdown for %s (Total: £%.2f)'\n" 
+            (insert (format "set title 'Category Breakdown for %s (Total: £%.2f)'\n"
                             month month-total))
             (insert "set ylabel 'Amount (£)'\n")
             (insert "set yrange [0:*]\n")
@@ -388,8 +410,8 @@ Categories are ordered consistently based on global top spending categories."
           (call-process "gnuplot" nil nil nil plot-file)
           
           ;; Insert entry in report
-          (insert (format "[[file:%s]]\n" 
-                          (file-relative-name image-file 
+          (insert (format "[[file:%s]]\n"
+                          (file-relative-name image-file
                                               (file-name-directory output-file)))))))
     
     ;; Add instructions for viewing
@@ -409,7 +431,7 @@ Categories are ordered consistently based on global top spending categories."
 
   ;; Ensure async is available
   (unless (fboundp 'async-start)
-    (error "async.el library not found. Please install and load it."))
+    (error "Async.el library not found.  Please install and load it"))
 
   ;; Ensure the CSV file exists and is readable
   (unless (file-readable-p csv-file)
@@ -433,7 +455,7 @@ Categories are ordered consistently based on global top spending categories."
       (require 'cl-lib)
       
       ;; Load the bank-buddy package
-      (let ((bank-buddy-file ,(or load-file-name 
+      (let ((bank-buddy-file ,(or load-file-name
                                   (locate-library "bank-buddy")
                                   (buffer-file-name))))
         (when bank-buddy-file
@@ -501,11 +523,11 @@ Categories are ordered consistently based on global top spending categories."
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
            
            ;; Determine output directory for images
-           (setq output-dir 
-                 (bank-buddy-ensure-directory 
-                  (expand-file-name 
+           (setq output-dir
+                 (bank-buddy-ensure-directory
+                  (expand-file-name
                    "bank-buddy-monthly-plots"
-                   (or bank-buddy-output-directory 
+                   (or bank-buddy-output-directory
                        (file-name-directory output-file)))))
            
            ;; Generate the report content in a temp buffer
@@ -529,8 +551,8 @@ Categories are ordered consistently based on global top spending categories."
              (bank-buddy-generate-unmatched-transactions)
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
-           (bank-buddy-show-progress 
-            (format "Report generated successfully: %s\nMonthly plots saved to: %s" 
+           (bank-buddy-show-progress
+            (format "Report generated successfully: %s\nMonthly plots saved to: %s"
                     output-file output-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
@@ -542,8 +564,8 @@ Categories are ordered consistently based on global top spending categories."
   (let* ((all-months (sort (hash-table-keys bank-buddy-monthly-totals) #'string>))
          (global-category-order (bank-buddy-get-global-category-order))
          ;; Limit to top N categories for clarity in the table
-         (top-categories (cl-subseq global-category-order 
-                                    0 
+         (top-categories (cl-subseq global-category-order
+                                    0
                                     (min (length global-category-order)
                                          bank-buddy-top-spending-categories)))
          (totals-by-category (make-hash-table :test 'equal)))
@@ -578,8 +600,8 @@ Categories are ordered consistently based on global top spending categories."
           (let* ((month-cat-key (concat month "-" cat))
                  (cat-amount (gethash month-cat-key bank-buddy-cat-tot 0)))
             ;; Track category totals for potential footer row
-            (puthash cat 
-                     (+ (gethash cat totals-by-category 0) cat-amount) 
+            (puthash cat
+                     (+ (gethash cat totals-by-category 0) cat-amount)
                      totals-by-category)
             ;; Add to the table
             (insert (format "| %.2f " cat-amount))))
@@ -628,7 +650,7 @@ Categories are ordered consistently based on global top spending categories."
     
     (insert "#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-categories.png :execute_on_open t :results file :exports results\n")
     (insert "set terminal png size 1200,600 enhanced font 'Verdana,10'\n")
-    (insert "set title 'Monthly Spending by Category'\n") 
+    (insert "set title 'Monthly Spending by Category'\n")
     (insert "set xlabel 'Month'\n")
     (insert "set ylabel 'Amount (£)'\n")
     (insert "set style data linespoints\n")
@@ -684,8 +706,9 @@ Categories are ordered consistently based on global top spending categories."
 
 (defun bank-buddy-generate-category-bar (month global-category-order bar-width month-amount)
   "Generate a text-based bar showing category spending for MONTH.
-GLOBAL-CATEGORY-ORDER is the list of categories in their consistent display order.
-BAR-WIDTH is the maximum width of the bar in characters."
+GLOBAL-CATEGORY-ORDER is the ordered list of categories.
+BAR-WIDTH is the maximum width of the bar in characters.
+Argument MONTH-AMOUNT ."
   (let* ((month-total bank-buddy-highest-month-amount)
          (cat-totals-hash (make-hash-table :test 'equal))
          (bar-text "")
@@ -699,7 +722,7 @@ BAR-WIDTH is the maximum width of the bar in characters."
     ;; Now build the bar with consistent category order
     (dolist (category global-category-order)
       (let ((amount (gethash category cat-totals-hash 0)))
-        (when (and (> amount 0) 
+        (when (and (> amount 0)
                    (< num-categories-shown max-categories-to-show))
           (let* ((proportion (/ amount month-total))
                  (segment-width (round (* proportion bar-width)))
@@ -707,8 +730,8 @@ BAR-WIDTH is the maximum width of the bar in characters."
                  (padding-length (- segment-width (length display-text) 1)))
 
             (when (>= padding-length 0)
-              (setq bar-text (concat bar-text 
-                                     display-text 
+              (setq bar-text (concat bar-text
+                                     display-text
                                      (make-string padding-length ?_)
                                      "/"))
               (setq num-categories-shown (1+ num-categories-shown)))))))
@@ -756,7 +779,12 @@ If APPEND is non-nil, append to existing content."
     (floor (/ (float-time (time-subtract time2 time1)) 86400))))
 
 (defun bank-buddy--categorize-payment-local (name debit month date cat-tot merchants monthly-totals txn-size-dist subs)
-  "Categorize payment based on NAME, DEBIT amount, MONTH and DATE, updating local hash tables."
+  "Categorize payment based on NAME, DEBIT amount, MONTH and DATE.
+Argument CAT-TOT category total.
+Argument MERCHANTS list of merchants.
+Argument MONTHLY-TOTALS monthly totals.
+Argument TXN-SIZE-DIST .
+Argument SUBS ."
   (let ((category-found nil)
         (split-key nil)
         (merchant (replace-regexp-in-string " .*" "" name))
@@ -819,7 +847,7 @@ If APPEND is non-nil, append to existing content."
 
 ;; The core worker function to be run asynchronously.
 (defun bank-buddy--process-csv-async-worker (csv-file)
-  "Parse CSV-FILE and process payments. Returns processed data as a list.
+  "Parse CSV-FILE and process payments.  Return processed data as a list.
 This function runs in a separate process via async.el."
   ;; Ensure required libraries are loaded in the child process
   (require 'cl-lib)
@@ -1080,7 +1108,7 @@ This function runs in a separate process via async.el."
         (last-month nil))
 
     ;; Convert hash to list for sorting
-    (maphash (lambda (k v) 
+    (maphash (lambda (k v)
                (push (cons k v) merchants-list)
                (setq total-spending (+ total-spending v)))
              bank-buddy-merchants)
@@ -1114,9 +1142,9 @@ This function runs in a separate process via async.el."
           ;; Add a summary section with overall totals
           (insert (format "Analysis of merchant spending across %d months:\n\n" total-months))
           (insert (format "- *Total merchant spending:* £%.2f\n" total-spending))
-          (insert (format "- *Monthly average (all merchants):* £%.2f\n" 
+          (insert (format "- *Monthly average (all merchants):* £%.2f\n"
                           (/ total-spending (float total-months))))
-          (insert (format "- *Yearly average (all merchants):* £%.2f\n\n" 
+          (insert (format "- *Yearly average (all merchants):* £%.2f\n\n"
                           (* 12 (/ total-spending (float total-months)))))
           
           ;; Create the table header
@@ -1226,13 +1254,13 @@ This function runs in a separate process via async.el."
             (dolist (month-data months-list)
               (let* ((month (car month-data))
                      (amount (cdr month-data))
-                     (bar-text (bank-buddy-generate-category-bar 
+                     (bar-text (bank-buddy-generate-category-bar
                                 month global-category-order bar-width amount)))
                 (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
           (insert "#+end_verse\n\n")
           
           ;; Create category breakdown tables for each month
-          (setq all-monthly-cat-data (sort all-monthly-cat-data 
+          (setq all-monthly-cat-data (sort all-monthly-cat-data
                                            (lambda (a b) (string< (car a) (car b)))))
       (insert "No monthly spending data available.\n")))))
 
@@ -1341,7 +1369,7 @@ This function runs in a separate process via async.el."
 
   ;; Ensure async is available
   (unless (fboundp 'async-start)
-    (error "async.el library not found. Please install and load it."))
+    (error "Async.el library not found.  Please install and load it"))
 
   ;; Ensure the CSV file exists and is readable
   (unless (file-readable-p csv-file)
@@ -1365,7 +1393,7 @@ This function runs in a separate process via async.el."
       (require 'cl-lib)
       
       ;; Load the bank-buddy package
-      (let ((bank-buddy-file ,(or load-file-name 
+      (let ((bank-buddy-file ,(or load-file-name
                                   (locate-library "bank-buddy")
                                   (buffer-file-name))))
         (when bank-buddy-file
@@ -1433,11 +1461,11 @@ This function runs in a separate process via async.el."
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
            
            ;; Determine output directory for images
-           (setq output-dir 
-                 (bank-buddy-ensure-directory 
-                  (expand-file-name 
+           (setq output-dir
+                 (bank-buddy-ensure-directory
+                  (expand-file-name
                    "bank-buddy-monthly-plots"
-                   (or bank-buddy-output-directory 
+                   (or bank-buddy-output-directory
                        (file-name-directory output-file)))))
            
            ;; Generate the report content in a temp buffer
@@ -1462,8 +1490,8 @@ This function runs in a separate process via async.el."
              (insert "\n-----\n")
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
-           (bank-buddy-show-progress 
-            (format "Report generated successfully: %s\nMonthly plots saved to: %s" 
+           (bank-buddy-show-progress
+            (format "Report generated successfully: %s\nMonthly plots saved to: %s"
                     output-file output-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
@@ -1474,10 +1502,10 @@ This function runs in a separate process via async.el."
   "Open the directory containing the monthly breakdown plots."
   (interactive)
   (let* ((output-file (if (boundp 'output-file) output-file nil))
-         (plot-dir 
-          (expand-file-name 
+         (plot-dir
+          (expand-file-name
            "bank-buddy-monthly-plots"
-           (or bank-buddy-output-directory 
+           (or bank-buddy-output-directory
                (if output-file (file-name-directory output-file)
                  default-directory)))))
     
