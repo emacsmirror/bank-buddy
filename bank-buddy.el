@@ -1,10 +1,10 @@
-;;; bank-buddy.el --- Financial analysis and reporting for Emacs -*- lexical-binding: t; -*-
+;;; bank-buddy.el --- Financial analysis and reporting -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
 ;; Version: 0.1.1
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
-;; Keywords: finance, budget, reporting
+;; Keywords: matching
 ;; URL: https://github.com/captainflasmr/bank-buddy
 ;;
 ;; This file is not part of GNU Emacs.
@@ -49,166 +49,11 @@
 ;;; Code:
 
 (require 'bank-buddy-cat-mode)
+(require 'bank-buddy-core)
 (require 'cl-lib)
 (require 'async)
 
-(defgroup bank-buddy nil
-  "Customization options for bank-buddy."
-  :group 'applications)
-
-(defcustom bank-buddy-exclude-large-txns t
-  "Whether to exclude transactions."
-  :type 'boolean
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-large-txn-threshold 2000
-  "Threshold for large transactions in pounds."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-subscription-min-occurrences 3
-  "Minimum occurrences for subscription detection."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-top-spending-categories 10
-  "Number of top number of spending categories displayed."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-top-merchants 10
-  "Number of top number of merchants displayed."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-monthly-spending-bar-width 80
-  "Length of the bar in characters of Monthly Spending Features."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-monthly-spending-max-bar-categories 6
-  "Limit number of categories to keep visual clean."
-  :type 'number
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-output-directory nil
-  "Directory to save report images.  If nil, uses the directory of the output file."
-  :type '(choice (const :tag "Use output file directory" nil)
-                 (directory :tag "Custom directory"))
-  :group 'bank-buddy)
-
-(defvar bank-buddy-unmatched-transactions-local '()
-  "List of transactions that matched only the catch-all pattern.")
-
-(defvar bank-buddy-unmatched-transactions '()
-  "List of transactions that matched only the catch-all pattern.")
-
-(defvar bank-buddy-highest-month-amount 0
-  "The highest month amount.")
-
-(defvar bank-buddy-payments '()
-  "List of parsed payment transactions.  Populated by async callback.")
-
-(defvar bank-buddy-cat-tot (make-hash-table :test 'equal)
-  "Hash table storing category totals.  Populated by async callback.")
-
-(defvar bank-buddy-merchants (make-hash-table :test 'equal)
-  "Hash table storing merchant totals.  Populated by async callback.")
-
-(defvar bank-buddy-monthly-totals (make-hash-table :test 'equal)
-  "Hash table storing monthly spending totals.  Populated by async callback.")
-
-(defvar bank-buddy-txn-size-dist (make-hash-table :test 'equal)
-  "Hash table for tracking transaction size distribution.")
-
-(defvar bank-buddy-subs (make-hash-table :test 'equal)
-  "Hash table for tracking potential subscriptions.  Populated by async callback.")
-
-(defvar bank-buddy-date-first nil
-  "First transaction date.  Populated by async callback.")
-
-(defvar bank-buddy-date-last nil
-  "Last transaction date.  Populated by async callback.")
-
-;; Category mappings
-(defcustom bank-buddy-cat-list-defines
-  '(("katherine\\|james\\|kate" "prs")
-    ("railw\\|railway\\|train" "trn")
-    ("paypal" "pay")
-    ("electric\\|energy\\|water" "utl")
-    ("racing" "bet")
-    ("pension" "pen")
-    ("savings\\|saver" "sav")
-    ("uber" "txi")
-    ("magazine\\|news" "rdg")
-    ("claude\\|reddit\\|mobile\\|backmarket\\|openai\\|web" "web")
-    ("notemachine\\|withdrawal" "atm")
-    ("finance" "fin")
-    ("youtube\\|netflix" "str")
-    ("card" "crd")
-    ("top-up\\|phone" "phn")
-    ("amaz\\|amz" "amz")
-    ("pets\\|pet" "pet")
-    ("dentist" "dnt")
-    ("residential\\|rent\\|mortgage" "hse")
-    ("deliveroo\\|just.*eat" "fod")
-    ("ebay\\|apple\\|itunes" "shp")
-    ("law" "law")
-    ("anyvan" "hmv")
-    (".*" "o"))
-  "Categorization patterns for transactions."
-  :type '(alist :key-type string :value-type string)
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-category-names
-  '(("prs" . "Personal")
-    ("trn" . "Transport")
-    ("pay" . "PayPal")
-    ("utl" . "Utilities")
-    ("bet" . "Betting")
-    ("pen" . "Pension")
-    ("sav" . "Savings")
-    ("txi" . "Taxi")
-    ("rdg" . "Reading")
-    ("web" . "Web Services")
-    ("atm" . "Cash Withdrawals")
-    ("fin" . "Finance")
-    ("str" . "Streaming")
-    ("crd" . "Credit Card")
-    ("phn" . "Phone")
-    ("amz" . "Amazon")
-    ("pet" . "Pet Expenses")
-    ("dnt" . "Dental")
-    ("hse" . "Housing")
-    ("fod" . "Food")
-    ("shp" . "Shopping")
-    ("law" . "Legal")
-    ("hmv" . "Moving")
-    ("o" . "Other"))
-  "Human-readable category names for reporting."
-  :type '(alist :key-type string :value-type string)
-  :group 'bank-buddy)
-
-(defcustom bank-buddy-subscription-patterns
-  '(("RACINGTV" . "Racing TV")
-    ("GOOGLE" . "Google Play")
-    ("PRIME VIDEO" . "Prime Video")
-    ("YOUTUBE" . "YouTube Premium")
-    ("NOW TV" . "NOW TV")
-    ("DELIVEROO PLUS" . "Deliveroo Plus")
-    ("AMAZON PRIME" . "Amazon Prime")
-    ("SAINSBURY.*PASS" . "Sainsbury's Delivery Pass")
-    ("CLAUDE" . "Claude.ai")
-    ("NETFLIX" . "Netflix")
-    ("DISNEY" . "Disney+")
-    ("SPOTIFY" . "Spotify")
-    ("APPLE.*ONE" . "Apple One"))
-  "Patterns to identify specific subscriptions."
-  :type '(alist :key-type string :value-type string)
-  :group 'bank-buddy)
-
-
-(defun csv-parse-buffer (first-line-contains-keys &optional buffer)
+(defun bank-buddy--csv-parse-buffer (first-line-contains-keys &optional buffer)
   "Parse a buffer containing CSV data, return data as a list of alists or lists.
 The first line in the buffer is interpreted as a header line
 if FIRST-LINE-CONTAINS-KEYS is non-nil, resulting in a list of alists.
@@ -219,7 +64,7 @@ nil the current buffer is parsed."
   (with-current-buffer (or buffer (current-buffer))
     (save-excursion
       (goto-char (point-min))
-      (let ((lines (csv-parse-lines))
+      (let ((lines (bank-buddy--csv-parse-lines))
             header result)
         (when lines
           (if first-line-contains-keys
@@ -228,11 +73,11 @@ nil the current buffer is parsed."
                       lines (cdr lines))
                 (dolist (line lines)
                   (when line
-                    (push (csv-combine-with-header header line) result))))
+                    (push (bank-buddy--csv-combine-with-header header line) result))))
             (setq result (reverse lines))))
         result))))
 
-(defun csv-parse-lines ()
+(defun bank-buddy--csv-parse-lines ()
   "Parse CSV lines in current buffer, returning a list of parsed lines.
 Each line is represented as a list of field values."
   (let ((lines nil)
@@ -293,7 +138,7 @@ Each line is represented as a list of field values."
     
     (reverse lines)))
 
-(defun csv-combine-with-header (header line)
+(defun bank-buddy--csv-combine-with-header (header line)
   "Combine HEADER and LINE into an alist."
   (let ((result nil))
     (dotimes (i (min (length header) (length line)))
@@ -555,8 +400,7 @@ Categories are ordered consistently based on global top spending categories."
                     output-file output-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
-             (find-file output-file)))))))
-   ))
+             (find-file output-file)))))))))
 
 (defun bank-buddy-generate-monthly-categories-table ()
   "Generate a comprehensive category table."
@@ -867,8 +711,7 @@ This function runs in a separate process via async.el."
     (condition-case err
         (with-temp-buffer
           (insert-file-contents csv-file)
-          ;; Use csv-parse-region for better error handling potential
-          (setq payments (csv-parse-buffer t)))
+          (setq payments (bank-buddy--csv-parse-buffer t)))
       (error (setq error-occurred (format "Error parsing CSV: %S" err))))
 
     ;; --- 2. Processing (similar to bank-buddy-process-payments) ---
@@ -926,8 +769,7 @@ This function runs in a separate process via async.el."
           :monthly-totals monthly-totals
           :txn-size-dist txn-size-dist
           :subs subs
-          :unmatched-transactions bank-buddy-unmatched-transactions-local
-          )))
+          :unmatched-transactions bank-buddy-unmatched-transactions-local)))
 
 ;; These functions assume the global variables have been populated by the async callback.
 
@@ -1490,8 +1332,7 @@ This function runs in a separate process via async.el."
                     output-file output-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
-             (find-file output-file)))))))
-   )
+             (find-file output-file))))))))
 
 (defun bank-buddy-view-monthly-plots ()
   "Open the directory containing the monthly breakdown plots."
