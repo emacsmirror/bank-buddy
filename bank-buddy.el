@@ -1,4 +1,4 @@
-;;; bank-buddy.el --- Financial analysis and reporting for Emacs
+;;; bank-buddy.el --- Financial analysis and reporting for Emacs -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
@@ -97,6 +97,9 @@
                  (directory :tag "Custom directory"))
   :group 'bank-buddy)
 
+(defvar bank-buddy-unmatched-transactions-local '()
+  "List of transactions that matched only the catch-all pattern.")
+
 (defvar bank-buddy-unmatched-transactions '()
   "List of transactions that matched only the catch-all pattern.")
 
@@ -116,7 +119,7 @@
   "Hash table storing monthly spending totals.  Populated by async callback.")
 
 (defvar bank-buddy-txn-size-dist (make-hash-table :test 'equal)
-  "Hash table for tracking transaction size distribution.  Populated by async callback.")
+  "Hash table for tracking transaction size distribution.")
 
 (defvar bank-buddy-subs (make-hash-table :test 'equal)
   "Hash table for tracking potential subscriptions.  Populated by async callback.")
@@ -205,16 +208,14 @@
   :group 'bank-buddy)
 
 
-(defun csv-parse-buffer (first-line-contains-keys &optional buffer coding-system)
+(defun csv-parse-buffer (first-line-contains-keys &optional buffer)
   "Parse a buffer containing CSV data, return data as a list of alists or lists.
 The first line in the buffer is interpreted as a header line
 if FIRST-LINE-CONTAINS-KEYS is non-nil, resulting in a list of alists.
 Otherwise, return a list of lists.
 
 If BUFFER is non-nil it gives the buffer to be parsed.  If it is
-nil the current buffer is parsed.
-
-CODING-SYSTEM gives the coding-system for reading the buffer."
+nil the current buffer is parsed."
   (with-current-buffer (or buffer (current-buffer))
     (save-excursion
       (goto-char (point-min))
@@ -253,8 +254,7 @@ Each line is represented as a list of field values."
          ((and (eq char ?\") in-quoted (eq previous-char ?\"))
           (setq current-field (concat current-field "\""))
           (setq previous-char nil) ;; Reset to avoid triple quote issue
-          (forward-char)
-          (continue))
+          (forward-char))
          
          ;; Handle field separator (comma)
          ((and (eq char ?,) (not in-quoted))
@@ -411,8 +411,7 @@ Categories are ordered consistently based on global top spending categories."
           
           ;; Insert entry in report
           (insert (format "[[file:%s]]\n"
-                          (file-relative-name image-file
-                                              (file-name-directory output-file)))))))
+                          (file-relative-name image-file output-dir))))))
     
     ;; Add instructions for viewing
     (insert "*** Viewing Monthly Breakdowns Sequentially\n\n")
@@ -560,7 +559,7 @@ Categories are ordered consistently based on global top spending categories."
    ))
 
 (defun bank-buddy-generate-monthly-categories-table ()
-  "Generate a comprehensive table with months as rows and top categories as columns."
+  "Generate a comprehensive category table."
   (let* ((all-months (sort (hash-table-keys bank-buddy-monthly-totals) #'string>))
          (global-category-order (bank-buddy-get-global-category-order))
          ;; Limit to top N categories for clarity in the table
@@ -579,8 +578,7 @@ Categories are ordered consistently based on global top spending categories."
     
     ;; Add each category as a column
     (dolist (cat top-categories)
-      (let ((cat-name (or (cdr (assoc cat bank-buddy-category-names)) cat)))
-        (insert (format "| %s " cat))))
+      (insert (format "| %s " cat)))
     
     ;; (insert "|\n|-")
     
@@ -704,11 +702,10 @@ Categories are ordered consistently based on global top spending categories."
       ;; Return just the ordered category codes
       (mapcar 'car cat-list))))
 
-(defun bank-buddy-generate-category-bar (month global-category-order bar-width month-amount)
+(defun bank-buddy-generate-category-bar (month global-category-order bar-width)
   "Generate a text-based bar showing category spending for MONTH.
 GLOBAL-CATEGORY-ORDER is the ordered list of categories.
-BAR-WIDTH is the maximum width of the bar in characters.
-Argument MONTH-AMOUNT ."
+BAR-WIDTH is the maximum width of the bar in characters."
   (let* ((month-total bank-buddy-highest-month-amount)
          (cat-totals-hash (make-hash-table :test 'equal))
          (bar-text "")
@@ -742,7 +739,7 @@ Argument MONTH-AMOUNT ."
       (concat "/" bar-text))))
 
 (defun bank-buddy-generate-unmatched-transactions ()
-  "Generate a section showing transactions that weren't matched by specific patterns."
+  "Generate transactions that weren't matched by specific patterns."
   (insert "\n* Unmatched Transactions\n\n")
   (insert "The following transactions were only matched by the catch-all pattern (\".*\"). ")
   (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`\n\n")
@@ -948,7 +945,7 @@ This function runs in a separate process via async.el."
          (months-count 0))
 
     ;; Calculate total spending
-    (maphash (lambda (k v)
+    (maphash (lambda (_k v)
                (setq total-spending (+ total-spending v))
                (setq months-count (1+ months-count)))
              bank-buddy-monthly-totals)
@@ -1103,9 +1100,7 @@ This function runs in a separate process via async.el."
   "Generate top merchants section with a comprehensive table."
   (let ((merchants-list '())
         (total-spending 0)
-        (total-months 0)
-        (first-month nil)
-        (last-month nil))
+        (total-months 0))
 
     ;; Convert hash to list for sorting
     (maphash (lambda (k v)
@@ -1189,7 +1184,7 @@ This function runs in a separate process via async.el."
       (insert "No merchant spending data available.\n"))))
 
 (defun bank-buddy-generate-monthly-spending ()
-  "Generate monthly spending patterns section with text-based category visualization and data table."
+  "Create a monthly spending report."
   (let* ((months-list '())
          (year-months (mapcar #'identity (hash-table-keys bank-buddy-monthly-totals))) ; Get keys
          (total-spending 0)
@@ -1255,7 +1250,7 @@ This function runs in a separate process via async.el."
               (let* ((month (car month-data))
                      (amount (cdr month-data))
                      (bar-text (bank-buddy-generate-category-bar
-                                month global-category-order bar-width amount)))
+                                month global-category-order bar-width)))
                 (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
           (insert "#+end_verse\n\n")
           

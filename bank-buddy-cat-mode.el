@@ -159,9 +159,7 @@ in the bank-buddy report."
         (setq pattern (regexp-quote pattern))
         
         ;; Add the new pattern to bank-buddy-cat-list-defines
-        (let* ((existing-categories (bank-buddy-cat-get-existing-categories))
-               (category-entry (assoc category existing-categories))
-               (catch-all-entry (assoc ".*" bank-buddy-cat-list-defines))
+        (let* ((catch-all-entry (assoc ".*" bank-buddy-cat-list-defines))
                (position-to-insert (if catch-all-entry
                                        (- (length bank-buddy-cat-list-defines) 1)
                                      (length bank-buddy-cat-list-defines))))
