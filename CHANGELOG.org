@@ -11,6 +11,10 @@ project's main git repository: [[https://github.com/captainflasmr/bank-buddy]]
 
 * Versions
 
+** <2025-04-12> 0.1.1
+
+Removed csv package dependency
+
 ** <2025-04-09> 0.1.0
 
 Refactor code and improve customization options

@@ -47,6 +47,10 @@ Here is an example of the type of report that is generated:
 
 * Whats New
 
+** <2025-04-12> 0.1.1
+
+Removed csv package dependency
+
 ** <2025-04-09> 0.1.0
 
 Refactor code and improve customization options
