@@ -51,6 +51,7 @@ cat > "$INIT_FILE" << EOF
 
 ;; Load the package
 (require 'bank-buddy)
+(add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable)
 
 ;; Show a message to confirm we're in test mode
 (message "Testing bank-buddy in vanilla Emacs %s" emacs-version)
@@ -72,7 +73,7 @@ rm -rf "$TEMP_DIR"
 #+RESULTS:
 | Starting  | Emacs      | 28.2      | with                                | minimal | configuration... |
 | Testing   | bank-buddy | from:     | ~/source/repos/bank-buddy           |         |                  |
-| Temporary | init       | file:     | /tmp/bank-buddy-test-u7zvad/init.el |         |                  |
+| Temporary | init       | file:     | /tmp/bank-buddy-test-XSNfSy/init.el |         |                  |
 | Cleaning  | up         | temporary | directory...                        |         |                  |
 
 ** Files in the Test Suite
