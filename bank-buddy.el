@@ -197,7 +197,7 @@ Categories are ordered consistently based on global top spending categories."
         (global-category-order (bank-buddy-get-global-category-order))
         ;; Limit to top N categories as specified in customization
         (top-categories nil))
-    (prin1 output-dir)    
+    (prin1 output-dir)
     ;; Get top categories list limited by user setting
     (setq top-categories
           (cl-subseq global-category-order
@@ -1440,7 +1440,7 @@ Otherwise, prompt for input and output files."
      
      ;; Case 3: Neither in CSV buffer nor in Dired
      (t
-      (error "Not in a CSV buffer or Dired. Please open a CSV file or use Dired to select one")))
+      (error "Not in a CSV buffer or Dired.  Please open a CSV file or use Dired to select one")))
     
     ;; Generate the report
     (if (and input-file output-file)
