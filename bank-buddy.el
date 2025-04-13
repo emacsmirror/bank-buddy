@@ -41,9 +41,9 @@
 ;;  (use-package bank-buddy)
 ;;
 ;;  1. Export your bank statement as a CSV file
-;;  2. Run: =M-x bank-buddy-generate-report=
-;;  3. Select your CSV file
-;;  4. Choose where to save the Org-mode report
+;;  2. Edit CSV using csv-mode for all lines to DATE,DESCRIPTION,AMOUNT
+;;  3. Open CSV file
+;;  4. Run: =M-x bank-buddy-generate=
 ;;  5. Open the generated report
 ;;
 ;;; Code:
@@ -1234,6 +1234,50 @@ This function runs in a separate process via async.el."
          ((and (>= avg-interval annual-low) (<= avg-interval annual-high)) "annual")
          (t "irregular"))))))
 
+(defun bank-buddy-view-monthly-plots ()
+  "Open the directory containing the monthly breakdown plots."
+  (interactive)
+  (let* ((output-file (if (boundp 'output-file) output-file nil))
+         (plot-dir
+          (expand-file-name
+           "bank-buddy-monthly-plots"
+           (or bank-buddy-core-output-directory
+               (if output-file (file-name-directory output-file)
+                 default-directory)))))
+    
+    (if (file-directory-p plot-dir)
+        (progn
+          (when (fboundp 'dired)
+            (dired plot-dir))
+          (message "Monthly plots are in: %s" plot-dir))
+      (message "Monthly plots directory not found: %s" plot-dir))))
+
+(defun bank-buddy-view-unmatched-transactions ()
+  "View the list of transactions that weren't matched by specific patterns."
+  (interactive)
+  (if (not bank-buddy-unmatched-transactions)
+      (message "No unmatched transactions available. Generate a report first.")
+    (with-current-buffer (get-buffer-create "*Bank Buddy Unmatched*")
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (org-mode)
+        (insert "* Unmatched Transactions\n\n")
+        (insert "The following transactions were only matched by the catch-all pattern (\".*\").\n")
+        (insert "You may want to add specific patterns for these in `bank-buddy-core-cat-list-defines`.\n\n")
+        (insert "Copy these to use for your regex development:\n\n")
+        (insert "#+begin_src elisp\n")
+        (insert ";; Add these patterns to bank-buddy-core-cat-list-defines\n")
+        (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
+          (insert (format "(\"%s\" \"CATEGORY\") ;; Replace CATEGORY with appropriate code\n" txn)))
+        (insert "#+end_src\n\n")
+        (insert "Raw transaction names for reference:\n\n")
+        (insert "#+begin_src text\n")
+        (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
+          (insert (format "%s\n" txn)))
+        (insert "#+end_src\n"))
+      (goto-char (point-min))
+      (display-buffer (current-buffer)))))
+
 ;; --- Main Entry Point ---
 
 ;;;###autoload
@@ -1371,49 +1415,39 @@ This function runs in a separate process via async.el."
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
              (find-file output-file))))))))
 
-(defun bank-buddy-view-monthly-plots ()
-  "Open the directory containing the monthly breakdown plots."
+;;;###autoload
+(defun bank-buddy-generate ()
+  "Intelligently generate a financial report based on context.
+If in a CSV buffer, use the current buffer's file.
+If in Dired, use the CSV file at point.
+Otherwise, prompt for input and output files."
   (interactive)
-  (let* ((output-file (if (boundp 'output-file) output-file nil))
-         (plot-dir
-          (expand-file-name
-           "bank-buddy-monthly-plots"
-           (or bank-buddy-core-output-directory
-               (if output-file (file-name-directory output-file)
-                 default-directory)))))
+  (let (input-file output-file)
+    (cond
+     ;; Case 1: In a CSV buffer
+     ((and buffer-file-name (string-match-p "\\.csv$" buffer-file-name))
+      (setq input-file buffer-file-name)
+      (setq output-file (concat (file-name-sans-extension buffer-file-name) ".org")))
+     
+     ;; Case 2: In Dired
+     ((eq major-mode 'dired-mode)
+      (let ((file (dired-get-filename nil t)))
+        (if (and file (string-match-p "\\.csv$" file))
+            (progn
+              (setq input-file file)
+              (setq output-file (concat (file-name-sans-extension file) ".org")))
+          (error "No CSV file selected in Dired"))))
+     
+     ;; Case 3: Neither in CSV buffer nor in Dired
+     (t
+      (error "Not in a CSV buffer or Dired. Please open a CSV file or use Dired to select one")))
     
-    (if (file-directory-p plot-dir)
+    ;; Generate the report
+    (if (and input-file output-file)
         (progn
-          (when (fboundp 'dired)
-            (dired plot-dir))
-          (message "Monthly plots are in: %s" plot-dir))
-      (message "Monthly plots directory not found: %s" plot-dir))))
-
-(defun bank-buddy-view-unmatched-transactions ()
-  "View the list of transactions that weren't matched by specific patterns."
-  (interactive)
-  (if (not bank-buddy-unmatched-transactions)
-      (message "No unmatched transactions available. Generate a report first.")
-    (with-current-buffer (get-buffer-create "*Bank Buddy Unmatched*")
-      (let ((inhibit-read-only t))
-        (erase-buffer)
-        (org-mode)
-        (insert "* Unmatched Transactions\n\n")
-        (insert "The following transactions were only matched by the catch-all pattern (\".*\").\n")
-        (insert "You may want to add specific patterns for these in `bank-buddy-core-cat-list-defines`.\n\n")
-        (insert "Copy these to use for your regex development:\n\n")
-        (insert "#+begin_src elisp\n")
-        (insert ";; Add these patterns to bank-buddy-core-cat-list-defines\n")
-        (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
-          (insert (format "(\"%s\" \"CATEGORY\") ;; Replace CATEGORY with appropriate code\n" txn)))
-        (insert "#+end_src\n\n")
-        (insert "Raw transaction names for reference:\n\n")
-        (insert "#+begin_src text\n")
-        (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
-          (insert (format "%s\n" txn)))
-        (insert "#+end_src\n"))
-      (goto-char (point-min))
-      (display-buffer (current-buffer)))))
+          (message "Generating report from %s to %s" input-file output-file)
+          (bank-buddy-generate-report input-file output-file))
+      (error "Failed to determine input and output files"))))
 
 (provide 'bank-buddy)
 

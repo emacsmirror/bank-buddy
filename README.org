@@ -10,7 +10,7 @@
 #+attr_html: :width 100%
 [[file:img/bank-buddy-banner.jpg]]
 
-Bank Buddy is an Emacs package that provides comprehensive financial analysis and reporting capabilities for your bank statements. It processes CSV bank statement data, categorizes transactions using customizable patterns, and generates detailed reports in Org-mode format.
+Bank Buddy is an Emacs package that provides financial analysis and reporting capabilities for your bank statements. It processes CSV bank statement data, categorizes transactions using customizable patterns, and generates detailed reports in Org-mode format.
 
 Here is an example of the type of report that is generated:
 
@@ -22,7 +22,7 @@ Here is an example of the type of report that is generated:
 
 - *Asynchronous Processing*: Efficiently handles large bank statements without blocking Emacs
 - *Smart Transaction Categorization*: Auto-categorizes transactions based on customizable regex patterns
-- *Comprehensive Financial Reports*: Generates detailed reports in Org-mode with:
+- *Financial Reports*: Generates detailed reports in Org-mode with:
   - Transaction summaries and overviews
   - Spending category analysis
   - Top merchant identification
@@ -418,7 +418,7 @@ Some users analyze financial CSV data using built-in Emacs packages like csv-mod
 - These are general-purpose tools that require manual customization for financial analysis
 - Bank Buddy provides specialized, financial-specific analysis and visualization
 - Bank Buddy automatically categorizes transactions based on patterns
-- Bank Buddy generates comprehensive reports without manual processing
+- Bank Buddy generates reports without manual processing
 
 *When to use csv/orgtbl-mode:* For custom, one-off analysis of financial data.  
 *When to use Bank Buddy:* For consistent, repeatable analysis of bank statements.
