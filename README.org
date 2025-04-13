@@ -14,7 +14,7 @@ Bank Buddy is an Emacs package that provides financial analysis and reporting ca
 
 It does not depend on any external account system, and the analysis is handled by =elisp=. The only external tool that may be required is =gnuplot= to visualize the generated org tables containing the financial breakdown.
 
-Here is an example of the type of report that is generated:
+Here is an example of the type of report that is generated (obviously using test data :))
 
 #+attr_org: :width 300px
 #+attr_html: :width 100%
