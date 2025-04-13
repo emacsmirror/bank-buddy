@@ -2,6 +2,79 @@
 
 This document describes how to use the test framework for the Bank Buddy Emacs package. The test suite ensures that Bank Buddy correctly parses bank statement CSV files, accurately categorizes transactions, and produces reports as expected.
 
+** Run bank-buddy with different Emacs versions
+
+- [X] emacs-28.1
+- [X] emacs-29.3
+- [X] emacs-29.4
+- [X] emacs-30.1
+
+Using the following script to generate a very simple init.el file which is then run up against varying versions of Emacs
+
+#+begin_src bash
+#!/bin/bash
+
+# Default Emacs version if none specified
+VERSION=${1:-"28.2"}
+PACKAGE_PATH="~/source/repos/bank-buddy"
+
+# Create a temporary directory for the test
+TEMP_DIR=$(mktemp -d -t bank-buddy-test-XXXXXX)
+INIT_FILE="$TEMP_DIR/init.el"
+
+# Create a minimal init.el file
+cat > "$INIT_FILE" << EOF
+;; Minimal init.el for testing bank-buddy (offline version)
+
+(require 'package)
+
+(when (eq system-type 'gnu/linux)
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("elpa" . "https://elpa.gnu.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/"))))
+
+(package-initialize)
+
+;; Refresh package contents
+(unless package-archive-contents
+  (package-refresh-contents))
+
+;; Install async if it's not already installed
+(unless (package-installed-p 'async)
+  (package-install 'async))
+
+;; Require async
+(require 'async)
+
+;; Add the package to the load path
+(add-to-list 'load-path "$PACKAGE_PATH")
+
+;; Load the package
+(require 'bank-buddy)
+
+;; Show a message to confirm we're in test mode
+(message "Testing bank-buddy in vanilla Emacs %s" emacs-version)
+EOF
+
+# Run Emacs with the temporary init file
+echo "Starting Emacs $VERSION with minimal configuration..."
+echo "Testing bank-buddy from: $PACKAGE_PATH"
+echo "Temporary init file: $INIT_FILE"
+
+# Run the appropriate Emacs version
+"$HOME/bin/emacs-$VERSION" -Q -l "$INIT_FILE"
+
+# Cleanup
+echo "Cleaning up temporary directory..."
+rm -rf "$TEMP_DIR"
+#+end_src
+
+#+RESULTS:
+| Starting  | Emacs      | 28.2      | with                                | minimal | configuration... |
+| Testing   | bank-buddy | from:     | ~/source/repos/bank-buddy           |         |                  |
+| Temporary | init       | file:     | /tmp/bank-buddy-test-u7zvad/init.el |         |                  |
+| Cleaning  | up         | temporary | directory...                        |         |                  |
+
 ** Files in the Test Suite
 
 1. *financial-report.csv* - A synthetic bank statement with test data covering all categories
