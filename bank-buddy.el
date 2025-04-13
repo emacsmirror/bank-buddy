@@ -53,6 +53,43 @@
 (require 'cl-lib)
 (require 'async)
 
+(defgroup bank-buddy nil
+  "Customization options for bank-buddy."
+  :group 'applications)
+
+(defvar bank-buddy-unmatched-transactions-local '()
+  "List of transactions that matched only the catch-all pattern.")
+
+(defvar bank-buddy-unmatched-transactions '()
+  "List of transactions that matched only the catch-all pattern.")
+
+(defvar bank-buddy-highest-month-amount 0
+  "The highest month amount.")
+
+(defvar bank-buddy-payments '()
+  "List of parsed payment transactions.  Populated by async callback.")
+
+(defvar bank-buddy-cat-tot (make-hash-table :test 'equal)
+  "Hash table storing category totals.  Populated by async callback.")
+
+(defvar bank-buddy-merchants (make-hash-table :test 'equal)
+  "Hash table storing merchant totals.  Populated by async callback.")
+
+(defvar bank-buddy-monthly-totals (make-hash-table :test 'equal)
+  "Hash table storing monthly spending totals.  Populated by async callback.")
+
+(defvar bank-buddy-txn-size-dist (make-hash-table :test 'equal)
+  "Hash table for tracking transaction size distribution.")
+
+(defvar bank-buddy-subs (make-hash-table :test 'equal)
+  "Hash table for tracking potential subscriptions.  Populated by async callback.")
+
+(defvar bank-buddy-date-first nil
+  "First transaction date.  Populated by async callback.")
+
+(defvar bank-buddy-date-last nil
+  "Last transaction date.  Populated by async callback.")
+
 (defun bank-buddy--csv-parse-buffer (first-line-contains-keys &optional buffer)
   "Parse a buffer containing CSV data, return data as a list of alists or lists.
 The first line in the buffer is interpreted as a header line
@@ -166,7 +203,7 @@ Categories are ordered consistently based on global top spending categories."
           (cl-subseq global-category-order
                       0
                       (min (length global-category-order)
-                           bank-buddy-top-spending-categories)))
+                           bank-buddy-core-top-spending-categories)))
     
     ;; Get all months and their category data
     (maphash
@@ -225,7 +262,7 @@ Categories are ordered consistently based on global top spending categories."
             (insert "# Category Amount Percentage\n")
             (dolist (cat ordered-cat-data)
               (let* ((cat-code (car cat))
-                     (cat-name (or (cdr (assoc cat-code bank-buddy-category-names)) cat-code))
+                     (cat-name (or (cdr (assoc cat-code bank-buddy-core-category-names)) cat-code))
                      (amount (cdr cat))
                      (percentage (if (> month-total 0)
                                      (* 100.0 (/ amount month-total))
@@ -266,7 +303,7 @@ Categories are ordered consistently based on global top spending categories."
     (insert "3. Open the pattern: plot-*-breakdown.png\n\n")
     (insert "Many image viewers will allow you to step through these images in chronological order.\n\n")
     (insert "Note: Categories in all plots are ordered consistently based on the top-spending categories ")
-    (insert (format "across the entire time period (limited to top %d categories).\n" bank-buddy-top-spending-categories)))
+    (insert (format "across the entire time period (limited to top %d categories).\n" bank-buddy-core-top-spending-categories)))
 
 ;; Modified main report generation function
 (defun bank-buddy-generate-report (csv-file output-file)
@@ -306,12 +343,12 @@ Categories are ordered consistently based on global top spending categories."
           (load-file bank-buddy-file))
         
         ;; Pass all needed variables to the worker
-        (let ((bank-buddy-exclude-large-txns ,bank-buddy-exclude-large-txns)
-              (bank-buddy-large-txn-threshold ,bank-buddy-large-txn-threshold)
-              (bank-buddy-subscription-min-occurrences ,bank-buddy-subscription-min-occurrences)
-              (bank-buddy-cat-list-defines ',bank-buddy-cat-list-defines)
-              (bank-buddy-subscription-patterns ',bank-buddy-subscription-patterns)
-              (bank-buddy-category-names ',bank-buddy-category-names))
+        (let ((bank-buddy-core-exclude-large-txns ,bank-buddy-core-exclude-large-txns)
+              (bank-buddy-core-large-txn-threshold ,bank-buddy-core-large-txn-threshold)
+              (bank-buddy-core-subscription-min-occurrences ,bank-buddy-core-subscription-min-occurrences)
+              (bank-buddy-core-cat-list-defines ',bank-buddy-core-cat-list-defines)
+              (bank-buddy-core-subscription-patterns ',bank-buddy-core-subscription-patterns)
+              (bank-buddy-core-category-names ',bank-buddy-core-category-names))
           
           ;; Call the worker function and include file paths in the result
           (let ((worker-result (bank-buddy--process-csv-async-worker ,csv-file)))
@@ -371,7 +408,7 @@ Categories are ordered consistently based on global top spending categories."
                  (bank-buddy-ensure-directory
                   (expand-file-name
                    "bank-buddy-monthly-plots"
-                   (or bank-buddy-output-directory
+                   (or bank-buddy-core-output-directory
                        (file-name-directory output-file)))))
            
            ;; Generate the report content in a temp buffer
@@ -410,7 +447,7 @@ Categories are ordered consistently based on global top spending categories."
          (top-categories (cl-subseq global-category-order
                                     0
                                     (min (length global-category-order)
-                                         bank-buddy-top-spending-categories)))
+                                         bank-buddy-core-top-spending-categories)))
          (totals-by-category (make-hash-table :test 'equal)))
 
     (insert "\n** Monthly Spending by Category\n\n")
@@ -554,7 +591,7 @@ BAR-WIDTH is the maximum width of the bar in characters."
          (cat-totals-hash (make-hash-table :test 'equal))
          (bar-text "")
          (num-categories-shown 0)
-         (max-categories-to-show bank-buddy-monthly-spending-max-bar-categories)) ;; Limit number of categories to keep visual clean
+         (max-categories-to-show bank-buddy-core-monthly-spending-max-bar-categories)) ;; Limit number of categories to keep visual clean
     
     ;; Convert month's category totals to hash for easy lookup
     (dolist (cat-pair (bank-buddy-get-month-category-totals month))
@@ -586,7 +623,7 @@ BAR-WIDTH is the maximum width of the bar in characters."
   "Generate transactions that weren't matched by specific patterns."
   (insert "\n* Unmatched Transactions\n\n")
   (insert "The following transactions were only matched by the catch-all pattern (\".*\"). ")
-  (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`\n\n")
+  (insert "You may want to add specific patterns for these in `bank-buddy-core-cat-list-defines`\n\n")
   
   (if bank-buddy-unmatched-transactions
       (progn
@@ -631,8 +668,8 @@ Argument SUBS ."
         (merchant (replace-regexp-in-string " .*" "" name))
         (unmatched t)) ; New flag to track if transaction matched only catch-all
 
-    ;; Find category (uses global bank-buddy-cat-list-defines read by the child process)
-    (cl-loop for category in bank-buddy-cat-list-defines
+    ;; Find category (uses global bank-buddy-core-cat-list-defines read by the child process)
+    (cl-loop for category in bank-buddy-core-cat-list-defines
              when (string-match-p (nth 0 category) name)
              do (progn
                   (setq category-found (nth 1 category))
@@ -674,8 +711,8 @@ Argument SUBS ."
      (t
       (puthash "over-100" (1+ (gethash "over-100" txn-size-dist 0)) txn-size-dist)))
 
-    ;; Track potential subscriptions (local hash, uses global bank-buddy-subscription-patterns)
-    (cl-loop for (pattern . sub-name) in bank-buddy-subscription-patterns
+    ;; Track potential subscriptions (local hash, uses global bank-buddy-core-subscription-patterns)
+    (cl-loop for (pattern . sub-name) in bank-buddy-core-subscription-patterns
              when (string-match-p pattern (upcase name))
              do (let* ((sub-key (concat sub-name "-" (format "%.2f" debit)))
                        (dates (gethash sub-key subs nil)))
@@ -746,8 +783,8 @@ This function runs in a separate process via async.el."
 
                     ;; Skip large transactions if configured
                     (when (and (numberp debit) ; Ensure debit is a number
-                               (or (not bank-buddy-exclude-large-txns)
-                                   (< debit bank-buddy-large-txn-threshold)))
+                               (or (not bank-buddy-core-exclude-large-txns)
+                                   (< debit bank-buddy-core-large-txn-threshold)))
                       (when (> debit 0) ;; Only count positive debits
                         ;; Call the local categorizer, passing local hash tables
                         (bank-buddy--categorize-payment-local
@@ -901,9 +938,9 @@ This function runs in a separate process via async.el."
           ;; Add rows for each category up to the limit
           (let ((counter 0))
             (dolist (cat categories)
-              (when (< counter bank-buddy-top-spending-categories)
+              (when (< counter bank-buddy-core-top-spending-categories)
                 (let* ((cat-code (car cat))
-                       (cat-name (cdr (assoc cat-code bank-buddy-category-names)))
+                       (cat-name (cdr (assoc cat-code bank-buddy-core-category-names)))
                        (amount (cdr cat))
                        (percentage (* 100.0 (/ amount total-spending)))
                        (monthly-avg (/ amount (float total-months)))
@@ -992,7 +1029,7 @@ This function runs in a separate process via async.el."
           ;; Add rows for each merchant up to the limit
           (let ((counter 0))
             (dolist (merchant merchants-list)
-              (when (< counter bank-buddy-top-merchants)
+              (when (< counter bank-buddy-core-top-merchants)
                 (let* ((merchant-name (car merchant))
                        (amount (cdr merchant))
                        (percentage (* 100.0 (/ amount total-spending)))
@@ -1087,7 +1124,7 @@ This function runs in a separate process via async.el."
           ;; Sort the list representation for output
           (setq months-list (sort months-list (lambda (a b) (string< (car b) (car a)))))
           
-          (let ((bar-width bank-buddy-monthly-spending-bar-width)) ;; Wider bar to accommodate text-based visualization
+          (let ((bar-width bank-buddy-core-monthly-spending-bar-width)) ;; Wider bar to accommodate text-based visualization
             (dolist (month-data months-list)
               (let* ((month (car month-data))
                      (amount (cdr month-data))
@@ -1109,7 +1146,7 @@ This function runs in a separate process via async.el."
     ;; Find likely subscriptions based on recurrence patterns
     (maphash
      (lambda (key occurrences)
-       (when (>= (length occurrences) bank-buddy-subscription-min-occurrences)
+       (when (>= (length occurrences) bank-buddy-core-subscription-min-occurrences)
          (let* ((parts (split-string key "-"))
                 ;; Combine name parts except the last (amount)
                 (sub-name (mapconcat #'identity (butlast parts) "-"))
@@ -1237,12 +1274,12 @@ This function runs in a separate process via async.el."
           (load-file bank-buddy-file))
         
         ;; Pass all needed variables to the worker
-        (let ((bank-buddy-exclude-large-txns ,bank-buddy-exclude-large-txns)
-              (bank-buddy-large-txn-threshold ,bank-buddy-large-txn-threshold)
-              (bank-buddy-subscription-min-occurrences ,bank-buddy-subscription-min-occurrences)
-              (bank-buddy-cat-list-defines ',bank-buddy-cat-list-defines)
-              (bank-buddy-subscription-patterns ',bank-buddy-subscription-patterns)
-              (bank-buddy-category-names ',bank-buddy-category-names))
+        (let ((bank-buddy-core-exclude-large-txns ,bank-buddy-core-exclude-large-txns)
+              (bank-buddy-core-large-txn-threshold ,bank-buddy-core-large-txn-threshold)
+              (bank-buddy-core-subscription-min-occurrences ,bank-buddy-core-subscription-min-occurrences)
+              (bank-buddy-core-cat-list-defines ',bank-buddy-core-cat-list-defines)
+              (bank-buddy-core-subscription-patterns ',bank-buddy-core-subscription-patterns)
+              (bank-buddy-core-category-names ',bank-buddy-core-category-names))
           
           ;; Call the worker function and include file paths in the result
           (let ((worker-result (bank-buddy--process-csv-async-worker ,csv-file)))
@@ -1302,7 +1339,7 @@ This function runs in a separate process via async.el."
                  (bank-buddy-ensure-directory
                   (expand-file-name
                    "bank-buddy-monthly-plots"
-                   (or bank-buddy-output-directory
+                   (or bank-buddy-core-output-directory
                        (file-name-directory output-file)))))
            
            ;; Generate the report content in a temp buffer
@@ -1341,7 +1378,7 @@ This function runs in a separate process via async.el."
          (plot-dir
           (expand-file-name
            "bank-buddy-monthly-plots"
-           (or bank-buddy-output-directory
+           (or bank-buddy-core-output-directory
                (if output-file (file-name-directory output-file)
                  default-directory)))))
     
@@ -1363,10 +1400,10 @@ This function runs in a separate process via async.el."
         (org-mode)
         (insert "* Unmatched Transactions\n\n")
         (insert "The following transactions were only matched by the catch-all pattern (\".*\").\n")
-        (insert "You may want to add specific patterns for these in `bank-buddy-cat-list-defines`.\n\n")
+        (insert "You may want to add specific patterns for these in `bank-buddy-core-cat-list-defines`.\n\n")
         (insert "Copy these to use for your regex development:\n\n")
         (insert "#+begin_src elisp\n")
-        (insert ";; Add these patterns to bank-buddy-cat-list-defines\n")
+        (insert ";; Add these patterns to bank-buddy-core-cat-list-defines\n")
         (dolist (txn (sort (copy-sequence bank-buddy-unmatched-transactions) #'string<))
           (insert (format "(\"%s\" \"CATEGORY\") ;; Replace CATEGORY with appropriate code\n" txn)))
         (insert "#+end_src\n\n")

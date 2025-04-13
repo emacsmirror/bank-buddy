@@ -28,86 +28,49 @@
 ;;
 ;;; Code:
 
-(defgroup bank-buddy nil
-  "Customization options for bank-buddy."
-  :group 'applications)
-
-(defcustom bank-buddy-exclude-large-txns t
+(defcustom bank-buddy-core-exclude-large-txns t
   "Whether to exclude transactions."
   :type 'boolean
   :group 'bank-buddy)
 
-(defcustom bank-buddy-large-txn-threshold 2000
+(defcustom bank-buddy-core-large-txn-threshold 2000
   "Threshold for large transactions in pounds."
   :type 'number
   :group 'bank-buddy)
 
-(defcustom bank-buddy-subscription-min-occurrences 3
+(defcustom bank-buddy-core-subscription-min-occurrences 3
   "Minimum occurrences for subscription detection."
   :type 'number
   :group 'bank-buddy)
 
-(defcustom bank-buddy-top-spending-categories 10
+(defcustom bank-buddy-core-top-spending-categories 10
   "Number of top number of spending categories displayed."
   :type 'number
   :group 'bank-buddy)
 
-(defcustom bank-buddy-top-merchants 10
+(defcustom bank-buddy-core-top-merchants 10
   "Number of top number of merchants displayed."
   :type 'number
   :group 'bank-buddy)
 
-(defcustom bank-buddy-monthly-spending-bar-width 80
+(defcustom bank-buddy-core-monthly-spending-bar-width 80
   "Length of the bar in characters of Monthly Spending Features."
   :type 'number
   :group 'bank-buddy)
 
-(defcustom bank-buddy-monthly-spending-max-bar-categories 6
+(defcustom bank-buddy-core-monthly-spending-max-bar-categories 6
   "Limit number of categories to keep visual clean."
   :type 'number
   :group 'bank-buddy)
 
-(defcustom bank-buddy-output-directory nil
+(defcustom bank-buddy-core-output-directory nil
   "Directory to save report images.  If nil, uses the directory of the output file."
   :type '(choice (const :tag "Use output file directory" nil)
                  (directory :tag "Custom directory"))
   :group 'bank-buddy)
 
-(defvar bank-buddy-unmatched-transactions-local '()
-  "List of transactions that matched only the catch-all pattern.")
-
-(defvar bank-buddy-unmatched-transactions '()
-  "List of transactions that matched only the catch-all pattern.")
-
-(defvar bank-buddy-highest-month-amount 0
-  "The highest month amount.")
-
-(defvar bank-buddy-payments '()
-  "List of parsed payment transactions.  Populated by async callback.")
-
-(defvar bank-buddy-cat-tot (make-hash-table :test 'equal)
-  "Hash table storing category totals.  Populated by async callback.")
-
-(defvar bank-buddy-merchants (make-hash-table :test 'equal)
-  "Hash table storing merchant totals.  Populated by async callback.")
-
-(defvar bank-buddy-monthly-totals (make-hash-table :test 'equal)
-  "Hash table storing monthly spending totals.  Populated by async callback.")
-
-(defvar bank-buddy-txn-size-dist (make-hash-table :test 'equal)
-  "Hash table for tracking transaction size distribution.")
-
-(defvar bank-buddy-subs (make-hash-table :test 'equal)
-  "Hash table for tracking potential subscriptions.  Populated by async callback.")
-
-(defvar bank-buddy-date-first nil
-  "First transaction date.  Populated by async callback.")
-
-(defvar bank-buddy-date-last nil
-  "Last transaction date.  Populated by async callback.")
-
 ;; Category mappings
-(defcustom bank-buddy-cat-list-defines
+(defcustom bank-buddy-core-cat-list-defines
   '(("katherine\\|james\\|kate" "prs")
     ("railw\\|railway\\|train" "trn")
     ("paypal" "pay")
@@ -136,7 +99,7 @@
   :type '(alist :key-type string :value-type string)
   :group 'bank-buddy)
 
-(defcustom bank-buddy-category-names
+(defcustom bank-buddy-core-category-names
   '(("prs" . "Personal")
     ("trn" . "Transport")
     ("pay" . "PayPal")
@@ -165,7 +128,7 @@
   :type '(alist :key-type string :value-type string)
   :group 'bank-buddy)
 
-(defcustom bank-buddy-subscription-patterns
+(defcustom bank-buddy-core-subscription-patterns
   '(("RACINGTV" . "Racing TV")
     ("GOOGLE" . "Google Play")
     ("PRIME VIDEO" . "Prime Video")

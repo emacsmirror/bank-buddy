@@ -88,11 +88,11 @@ category definitions and regenerate reports to see the effects.
 
 (defun bank-buddy-cat-get-existing-categories ()
   "Get a list of existing category codes."
-  (mapcar (lambda (item) (nth 1 item)) bank-buddy-cat-list-defines))
+  (mapcar (lambda (item) (nth 1 item)) bank-buddy-core-cat-list-defines))
 
 (defun bank-buddy-cat-get-category-name (code)
   "Get the human-readable name for category CODE."
-  (or (cdr (assoc code bank-buddy-category-names))
+  (or (cdr (assoc code bank-buddy-core-category-names))
       code))
 
 (defun bank-buddy-cat-choose-category (pattern)
@@ -166,18 +166,18 @@ in the bank-buddy report."
         ;; Escape regex special characters in the pattern
         (setq pattern (regexp-quote pattern))
         
-        ;; Add the new pattern to bank-buddy-cat-list-defines
-        (let* ((catch-all-entry (assoc ".*" bank-buddy-cat-list-defines))
+        ;; Add the new pattern to bank-buddy-core-cat-list-defines
+        (let* ((catch-all-entry (assoc ".*" bank-buddy-core-cat-list-defines))
                (position-to-insert (if catch-all-entry
-                                       (- (length bank-buddy-cat-list-defines) 1)
-                                     (length bank-buddy-cat-list-defines))))
+                                       (- (length bank-buddy-core-cat-list-defines) 1)
+                                     (length bank-buddy-core-cat-list-defines))))
           
           ;; Insert the new pattern before the catch-all pattern
-          (let ((new-defines (copy-sequence bank-buddy-cat-list-defines)))
+          (let ((new-defines (copy-sequence bank-buddy-core-cat-list-defines)))
             (setf (nthcdr position-to-insert new-defines)
                   (cons (list pattern category)
                         (nthcdr position-to-insert new-defines)))
-            (setq bank-buddy-cat-list-defines new-defines))
+            (setq bank-buddy-core-cat-list-defines new-defines))
           
           ;; Confirm the operation
           (message "Added pattern \"%s\" to category \"%s\" (%s)"
@@ -194,7 +194,7 @@ in the bank-buddy report."
             (bank-buddy-cat-regenerate-report)))))))
 
 (defun bank-buddy-cat-save-to-init-file ()
-  "Save the current `bank-buddy-cat-list-defines' to the user's init file."
+  "Save the current `bank-buddy-core-cat-list-defines' to the user's init file."
   (interactive)
   
   ;; Determine which file to save to
@@ -217,14 +217,14 @@ in the bank-buddy report."
       
       ;; Generate the elisp code to set the custom variable
       (let ((elisp-code
-             (format "(customize-set-variable 'bank-buddy-cat-list-defines\n  '%S)\n"
-                     bank-buddy-cat-list-defines)))
+             (format "(customize-set-variable 'bank-buddy-core-cat-list-defines\n  '%S)\n"
+                     bank-buddy-core-cat-list-defines)))
         
         ;; Handle different cases for how to insert the code
         (with-current-buffer (find-file-noselect file-to-use)
           (save-excursion
             (goto-char (point-min))
-            (if (re-search-forward "(customize-set-variable 'bank-buddy-cat-list-defines" nil t)
+            (if (re-search-forward "(customize-set-variable 'bank-buddy-core-cat-list-defines" nil t)
                 ;; Replace existing definition
                 (let ((start (match-beginning 0)))
                   (re-search-forward ")")

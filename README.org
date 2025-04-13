@@ -210,7 +210,7 @@ When viewing a report, you can:
 4. Optionally save the updated category definitions to your init file
 5. Regenerate the report to see the changes
 
-To manage existing categories or add new ones manually, customize =bank-buddy-cat-list-defines=.
+To manage existing categories or add new ones manually, customize =bank-buddy-core-cat-list-defines=.
 
 ** Category Format
 
@@ -230,7 +230,7 @@ For example:
 ("netflix\\|spotify\\|youtube" "str")  ; Streaming services
 #+end_src
 
-You can customize category codes and their display names by modifying =bank-buddy-category-names=.
+You can customize category codes and their display names by modifying =bank-buddy-core-category-names=.
 
 ** Updating and Regenerating Reports
 
@@ -283,23 +283,23 @@ This opens a buffer showing transactions that weren't matched by specific patter
 
 #+begin_src elisp
 ;; Exclude large transactions from analysis
-(setq bank-buddy-exclude-large-txns t)
-(setq bank-buddy-large-txn-threshold 2000)
+(setq bank-buddy-core-exclude-large-txns t)
+(setq bank-buddy-core-large-txn-threshold 2000)
 
 ;; Number of occurrences to detect subscriptions
-(setq bank-buddy-subscription-min-occurrences 3)
+(setq bank-buddy-core-subscription-min-occurrences 3)
 
 ;; Number of top items to display
-(setq bank-buddy-top-spending-categories 5)
-(setq bank-buddy-top-merchants 5)
+(setq bank-buddy-core-top-spending-categories 5)
+(setq bank-buddy-core-top-merchants 5)
 #+end_src
 
 ** Customizing Category Patterns
 
-You can customize the category patterns by setting =bank-buddy-cat-list-defines=:
+You can customize the category patterns by setting =bank-buddy-core-cat-list-defines=:
 
 #+begin_src elisp
-(customize-set-variable 'bank-buddy-cat-list-defines
+(customize-set-variable 'bank-buddy-core-cat-list-defines
   '(("amazon\\|amz" "amz")
     ("netflix\\|spotify" "str")
     ("uber\\|lyft" "txi")
@@ -310,10 +310,10 @@ You can customize the category patterns by setting =bank-buddy-cat-list-defines=
 
 ** Customizing Category Names
 
-Category codes are mapped to human-readable names via =bank-buddy-category-names=:
+Category codes are mapped to human-readable names via =bank-buddy-core-category-names=:
 
 #+begin_src elisp
-(customize-set-variable 'bank-buddy-category-names
+(customize-set-variable 'bank-buddy-core-category-names
   '(("amz" . "Amazon")
     ("str" . "Streaming Services")
     ("txi" . "Taxi & Rideshare")
@@ -327,7 +327,7 @@ Category codes are mapped to human-readable names via =bank-buddy-category-names
 Define subscription patterns for better detection of recurring payments:
 
 #+begin_src elisp
-(customize-set-variable 'bank-buddy-subscription-patterns
+(customize-set-variable 'bank-buddy-core-subscription-patterns
   '(("NETFLIX" . "Netflix")
     ("SPOTIFY" . "Spotify")
     ("AMAZON PRIME" . "Amazon Prime")
