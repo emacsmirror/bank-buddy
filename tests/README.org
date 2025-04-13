@@ -4,7 +4,7 @@ This document describes how to use the test framework for the Bank Buddy Emacs p
 
 ** Files in the Test Suite
 
-1. *test-bank-statement.csv* - A synthetic bank statement with test data covering all categories
+1. *financial-report.csv* - A synthetic bank statement with test data covering all categories
 2. *expected-report.org* - The expected report output for comparison
 3. *bank-buddy-test.el* - The test functions that run the tests and compare outputs
 
@@ -17,7 +17,7 @@ bank-buddy/
   ├── bank-buddy.el
   └── tests/
       ├── bank-buddy-test.el
-      ├── test-bank-statement.csv
+      ├── financial-report.csv
       └── expected-report.org
 #+end_src
 
