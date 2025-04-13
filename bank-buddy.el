@@ -649,12 +649,35 @@ If APPEND is non-nil, append to existing content."
     (unless (get-buffer-window buf)
       (display-buffer buf))))
 
-;; Helper function for date calculation (no change needed)
+(defun bank-buddy-parse-date (date-string)
+  "Parse DATE-STRING into a time value, working across Emacs versions."
+  (condition-case nil
+      (if (version< emacs-version "29.1")
+          ;; For Emacs versions before 29.1
+          (let* ((parsed (parse-time-string date-string))
+                 (year (nth 5 parsed))
+                 (month (nth 4 parsed))
+                 (day (nth 3 parsed))
+                 (current-time (decode-time)))
+            (encode-time 0 0 0 day month year (nth 8 current-time)))
+        ;; For Emacs 29.1 and later
+        (date-to-time date-string))
+    (error nil)))
+
 (defun bank-buddy-days-between (date1 date2)
   "Calculate days between DATE1 and DATE2 in YYYY-MM-DD format."
-  (let ((time1 (date-to-time date1))
-        (time2 (date-to-time date2)))
-    (floor (/ (float-time (time-subtract time2 time1)) 86400))))
+  (let ((time1 (bank-buddy-parse-date date1))
+        (time2 (bank-buddy-parse-date date2)))
+    (if (and time1 time2)
+        (floor (/ (float-time (time-subtract time2 time1)) 86400))
+      0))) ; Return 0 if either date is invalid
+
+;; Helper function for date calculation (no change needed)
+;; (defun bank-buddy-days-between (date1 date2)
+;;   "Calculate days between DATE1 and DATE2 in YYYY-MM-DD format."
+;;   (let ((time1 (date-to-time date1))
+;;         (time2 (date-to-time date2)))
+;;     (floor (/ (float-time (time-subtract time2 time1)) 86400))))
 
 (defun bank-buddy--categorize-payment-local (name debit month date cat-tot merchants monthly-totals txn-size-dist subs)
   "Categorize payment based on NAME, DEBIT amount, MONTH and DATE.
