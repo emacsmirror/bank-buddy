@@ -12,6 +12,8 @@
 
 Bank Buddy is an Emacs package that provides financial analysis and reporting capabilities for your bank statements. It processes CSV bank statement data, categorizes transactions using customizable patterns, and generates detailed reports in Org-mode format.
 
+It does not depend on any external account system, and the analysis is handled by =elisp=. The only external tool that may be required is =gnuplot= to visualize the generated org tables containing the financial breakdown.
+
 Here is an example of the type of report that is generated:
 
 #+attr_org: :width 300px
@@ -20,7 +22,6 @@ Here is an example of the type of report that is generated:
 
 * Key Features
 
-- *Asynchronous Processing*: Efficiently handles large bank statements without blocking Emacs
 - *Smart Transaction Categorization*: Auto-categorizes transactions based on customizable regex patterns
 - *Financial Reports*: Generates detailed reports in Org-mode with:
   - Transaction summaries and overviews
@@ -30,6 +31,8 @@ Here is an example of the type of report that is generated:
   - Recurring subscription detection
 - *Interactive Category Management*: Edit and refine categorization patterns directly from reports
 - *Data Visualizations*: Generates charts and graphs using org-plot
+- *No Reliance on External Accounting System* - Analysis is all Emacs built-in
+- *Asynchronous Processing*: Efficiently handles large bank statements without blocking Emacs
 
 * Screenshots
 
@@ -62,35 +65,13 @@ Refactor code and improve customization options
 
 * Getting Started
 
-** 1. Initial configuration
-
-To potentially regenerate gnuplots
-
-#+begin_src elisp
-(require 'ob-gnuplot)
-
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((gnuplot . t)))
-
-(defun my-org-babel-execute-on-open ()
-  (when (eq major-mode 'org-mode)
-    (org-babel-map-executables nil
-      (when (org-babel-get-src-block-info)
-        (let ((execute-on-open (cdr (assq :execute_on_open (nth 2 (org-babel-get-src-block-info))))))
-          (when execute-on-open
-            (org-babel-execute-src-block)))))))
-
-(add-hook 'org-mode-hook 'my-org-babel-execute-on-open)
-#+end_src
-
-** 2. Installation
+** Installation
 
 *** Dependencies
 
 - Emacs 26.1 or later
-- csv.el
 - async.el
+- gnuplot
 
 *** MELPA
 
@@ -122,18 +103,46 @@ OR
 
 OR
 
-   #+begin_src elisp
-   (add-to-list 'load-path "/path/to/bank-buddy")
-   (require 'bank-buddy)
-   #+end_src
+#+begin_src elisp
+(add-to-list 'load-path "/path/to/bank-buddy")
+(require 'bank-buddy)
+#+end_src
 
 * Quick Start
 
 1. Export your bank statement as a CSV file
-2. Run: =M-x bank-buddy-generate-report=
-3. Select your CSV file
-4. Choose where to save the Org-mode report
+2. Edit CSV using =csv-mode= for all lines to the format DATE,DESCRIPTION,AMOUNT
+3. Open CSV file
+4. Run: =M-x bank-buddy-generate=
 5. Open the generated report
+
+* Generate gnuplots
+
+You will need to enable gnuplot from within Emacs:
+
+#+begin_src elisp
+(require 'ob-gnuplot)
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((gnuplot . t)))
+#+end_src
+
+* Auto-regenerate gnuplots
+
+If you don't want to evalulate the org babel gnuplot scripts an every org load then you can automate it with the following:
+
+#+begin_src elisp
+(defun my-org-babel-execute-on-open ()
+  (when (eq major-mode 'org-mode)
+    (org-babel-map-executables nil
+      (when (org-babel-get-src-block-info)
+        (let ((execute-on-open (cdr (assq :execute_on_open (nth 2 (org-babel-get-src-block-info))))))
+          (when execute-on-open
+            (org-babel-execute-src-block)))))))
+
+(add-hook 'org-mode-hook 'my-org-babel-execute-on-open)
+#+end_src
 
 * Usage Guide
 
@@ -152,6 +161,10 @@ To generate a financial report:
 
 #+begin_src 
 M-x bank-buddy-generate-report
+
+OR
+
+M-x bank-buddy-generate
 #+end_src
 
 You'll be prompted to select an input CSV file and specify the output Org file.
@@ -384,6 +397,32 @@ Several Emacs packages exist for financial management, but they serve different 
 *When to use Ledger:* For complete personal finance tracking, investments, budgeting, and double-entry accounting.  
 *When to use Bank Buddy:* For quick analysis of bank statements and visualizing spending patterns.
 
+** HLedger-mode
+
+[[https://github.com/narendraj9/hledger-mode][HLedger-mode]] is an Emacs major mode for working with hledger, a plain-text accounting system similar to Ledger.
+
+*Key differences:*
+- HLedger, like Ledger, is a full double-entry accounting system; Bank Buddy focuses on bank statement analysis
+- HLedger requires manual transaction entry or formatted imports; Bank Buddy automates categorization
+- HLedger offers comprehensive accounting features (multiple currencies, time reporting); Bank Buddy emphasizes spending insights
+- Bank Buddy provides visual spending breakdowns; HLedger focuses on textual reports and balances
+
+*When to use HLedger-mode:* For detailed personal finance tracking, multi-currency support, and generating various financial reports.  
+*When to use Bank Buddy:* For quick analysis of bank statements and visualizing spending patterns without learning a full accounting system.
+
+** Elbank
+
+[[https://github.com/NicolasPetton/Elbank][Elbank]] is a personal finance reporting tool for Emacs that uses Weboob to fetch data from bank websites.
+
+*Key differences:*
+- Elbank can automatically fetch transactions from supported banks; Bank Buddy works with CSV exports
+- Elbank focuses on reporting and visualization; Bank Buddy offers both analysis and reporting
+- Elbank requires Weboob setup and configuration; Bank Buddy works directly with CSV files
+- Bank Buddy provides customizable transaction categorization; Elbank may rely on bank-provided categories
+
+*When to use Elbank:* For automated tracking of multiple bank accounts with direct data fetching and basic reporting.  
+*When to use Bank Buddy:* For detailed analysis and categorization of bank statements, especially when working with CSV exports or when bank integration isn't available or desired.
+
 ** Beancount-mode
 
 [[https://github.com/beancount/beancount-mode][Beancount-mode]] is an Emacs mode for Beancount, another plain-text accounting system.
@@ -397,19 +436,6 @@ Several Emacs packages exist for financial management, but they serve different 
 *When to use Beancount:* For precise, auditable personal accounting with strict validation.  
 *When to use Bank Buddy:* For simple spending analysis without learning accounting principles.
 
-** Money
-
-[[https://github.com/lihebi/money][Money]] is a simple package for tracking expenses in Org-mode.
-
-*Key differences:*
-- Money uses simple org-mode tables for basic expense tracking
-- Money is designed for manual entry of expenses
-- Bank Buddy focuses on automated analysis of bank-provided data
-- Bank Buddy provides more sophisticated visualization and categorization
-
-*When to use Money:* For simple manual expense tracking in Org.  
-*When to use Bank Buddy:* For analyzing historical bank data and discovering spending patterns.
-
 ** csv-mode and orgtbl-mode
 
 Some users analyze financial CSV data using built-in Emacs packages like csv-mode combined with org-table functionality.
@@ -422,19 +448,6 @@ Some users analyze financial CSV data using built-in Emacs packages like csv-mod
 
 *When to use csv/orgtbl-mode:* For custom, one-off analysis of financial data.  
 *When to use Bank Buddy:* For consistent, repeatable analysis of bank statements.
-
-** Budget-mode
-
-[[https://github.com/tlh/budget-mode][Budget-mode]] is focused on displaying budgeting information in Emacs.
-
-*Key differences:*
-- Budget-mode is designed for forward-looking budgeting
-- Bank Buddy performs historical analysis of past transactions
-- Budget-mode has fewer automated features
-- Bank Buddy's category management is more sophisticated
-
-*When to use Budget-mode:* For budget planning and tracking.  
-*When to use Bank Buddy:* For understanding past spending patterns.
 
 * Roadmap                                                           :roadmap:
 
