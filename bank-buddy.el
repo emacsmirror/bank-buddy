@@ -197,7 +197,7 @@ Categories are ordered consistently based on global top spending categories."
         (global-category-order (bank-buddy-get-global-category-order))
         ;; Limit to top N categories as specified in customization
         (top-categories nil))
-    
+    (prin1 output-dir)    
     ;; Get top categories list limited by user setting
     (setq top-categories
           (cl-subseq global-category-order
@@ -293,7 +293,7 @@ Categories are ordered consistently based on global top spending categories."
           
           ;; Insert entry in report
           (insert (format "[[file:%s]]\n"
-                          (file-relative-name image-file output-dir))))))
+                          (file-relative-name image-file default-directory))))))
     
     ;; Add instructions for viewing
     (insert "*** Viewing Monthly Breakdowns Sequentially\n\n")
