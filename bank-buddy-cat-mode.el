@@ -198,7 +198,8 @@ in the bank-buddy report."
   (interactive)
   
   ;; Determine which file to save to
-  (let* ((init-file (or user-init-file "~/.emacs"))
+  (let* ((init-file (or user-init-file
+                        (expand-file-name "init.el" user-emacs-directory)))
          (file-to-use
           (read-file-name
            "Save to init file: "
@@ -315,7 +316,7 @@ in the bank-buddy report."
     (bank-buddy-cat-mode 1)))
 
 ;; Add hook to auto-enable
-(add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable)
+;; (add-hook 'org-mode-hook #'bank-buddy-cat-maybe-enable)
 
 (provide 'bank-buddy-cat-mode)
 ;;; bank-buddy-cat-mode.el ends here

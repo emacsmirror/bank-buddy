@@ -416,7 +416,7 @@ Categories are ordered consistently based on global top spending categories."
              (org-mode)
              (insert "#+title: Financial Report (Bank Buddy)\n")
              (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
-             (insert (format "#+date: %s\n" (format-time-string "%Y-%m-%d %H:%M:%S")))
+             (insert (format "#+date: %s\n" (format-time-string "%F %T")))
              (insert "#+options: toc:1 num:nil\n")
              (insert "#+startup: inlineimages showall\n\n")
              (bank-buddy-generate-summary-overview)
@@ -581,7 +581,7 @@ Categories are ordered consistently based on global top spending categories."
       (setq cat-list (sort cat-list (lambda (a b) (> (cdr a) (cdr b)))))
       
       ;; Return just the ordered category codes
-      (mapcar 'car cat-list))))
+      (mapcar #'car cat-list))))
 
 (defun bank-buddy-generate-category-bar (month global-category-order bar-width)
   "Generate a text-based bar showing category spending for MONTH.
@@ -643,7 +643,7 @@ If APPEND is non-nil, append to existing content."
             (erase-buffer)
           (goto-char (point-max))
           (unless (bolp) (insert "\n")))
-        (insert (format "[%s] %s" (format-time-string "%H:%M:%S") message))
+        (insert (format "[%s] %s" (format-time-string "%T") message))
         (unless (looking-at "$") (insert "\n"))))
     ;; Display buffer if not already visible
     (unless (get-buffer-window buf)
@@ -900,7 +900,7 @@ This function runs in a separate process via async.el."
              bank-buddy-cat-tot)
 
     ;; Calculate total spending
-    (setq total-spending (apply '+ (mapcar 'cdr categories)))
+    (setq total-spending (apply #'+ (mapcar #'cdr categories)))
     
     ;; Calculate number of months from the monthly-totals hash
     (setq total-months (hash-table-count bank-buddy-monthly-totals))
@@ -1221,7 +1221,7 @@ This function runs in a separate process via async.el."
     ;; Determine likely frequency pattern based on average interval +/- tolerance
     (if (< (length intervals) 2) ; Need at least 2 intervals (3 occurrences) for good guess
         "insufficient data"
-      (let* ((avg-interval (/ (apply '+ intervals) (float (length intervals))))
+      (let* ((avg-interval (/ (apply #'+ intervals) (float (length intervals))))
              ;; Define tolerances around common periods
              (weekly-low 5) (weekly-high 10)
              (biweekly-low 11) (biweekly-high 20)
@@ -1391,7 +1391,7 @@ This function runs in a separate process via async.el."
              (org-mode)
              (insert "#+title: Financial Report (Bank Buddy)\n")
              (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
-             (insert (format "#+date: %s\n" (format-time-string "%Y-%m-%d %H:%M:%S")))
+             (insert (format "#+date: %s\n" (format-time-string "%F %T")))
              (insert "#+options: toc:1 num:nil\n")
              (insert "#+startup: inlineimages showall\n\n")
              (bank-buddy-generate-summary-overview)
@@ -1430,7 +1430,7 @@ Otherwise, prompt for input and output files."
       (setq output-file (concat (file-name-sans-extension buffer-file-name) ".org")))
      
      ;; Case 2: In Dired
-     ((eq major-mode 'dired-mode)
+     ((eq major-mode #'dired-mode)
       (let ((file (dired-get-filename nil t)))
         (if (and file (string-match-p "\\.csv$" file))
             (progn
