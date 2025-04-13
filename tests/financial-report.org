@@ -1,0 +1,254 @@
+#+title: Financial Report (Bank Buddy)
+#+subtitle: Data from financial-report.csv
+#+date: 2025-04-13 09:26:14
+#+options: toc:1 num:nil
+#+startup: inlineimages showall
+
+* Summary Overview
+
+- *Total Transactions Analyzed:* 73
+- *Date Range:* 2024-01-05 to 2024-06-30 (176 days)
+- *Total Spending:* £4522.73
+- *Average Daily Spending:* £25.70
+- *Average Weekly Spending:* £179.88
+
+* Top Spending Categories
+
+Analysis of spending across 6 months, showing category breakdown:
+
+#+NAME: top-spending-categories
+| Category               | Total Spend | Percentage | Monthly Avg | Yearly Avg |
+|------------------------+-------------+------------+-------------+------------|
+| /prs/ Personal         |      800.00 |      17.7% |      133.33 |    1600.00 |
+| /hse/ Housing          |      754.99 |      16.7% |      125.83 |    1509.98 |
+| /fod/ Food             |      663.54 |      14.7% |      110.59 |    1327.08 |
+| /o/ Other              |      622.14 |      13.8% |      103.69 |    1244.28 |
+| /utl/ Utilities        |      343.49 |       7.6% |       57.25 |     686.98 |
+| /amz/ Amazon           |      306.78 |       6.8% |       51.13 |     613.56 |
+| /pay/ PayPal           |      227.93 |       5.0% |       37.99 |     455.86 |
+| /atm/ Cash Withdrawals |      150.00 |       3.3% |       25.00 |     300.00 |
+| /web/ Web Services     |      120.00 |       2.7% |       20.00 |     240.00 |
+| /trn/ Transport        |      118.45 |       2.6% |       19.74 |     236.90 |
+| /str/ Streaming        |      107.92 |       2.4% |       17.99 |     215.84 |
+| /shp/ Shopping         |       85.99 |       1.9% |       14.33 |     171.98 |
+| /dnt/ Dental           |       60.00 |       1.3% |       10.00 |     120.00 |
+| /txi/ Taxi             |       46.50 |       1.0% |        7.75 |      93.00 |
+| /pet/ Pet Expenses     |       45.00 |       1.0% |        7.50 |      90.00 |
+| /bet/ Betting          |       45.00 |       1.0% |        7.50 |      90.00 |
+| /sav/ Savings          |       25.00 |       0.6% |        4.17 |      50.00 |
+
+#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Top Spending Categories"
+plot data using 4:xtic(1) with boxes title "Amount"
+#+end_src
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--top-spending-categories.png]]
+
+
+Monthly and yearly averages are calculated based on the total duration of the data.
+Data spans approximately 6 months.
+
+* Monthly Spending Patterns
+
+- *Highest Month:* 2024-03 (£1291.98)
+- *Lowest Month:* 2024-01 (£354.43)
+- *Average Monthly Spending:* £753.79
+
+** Text-Based Category Visualization
+
+Each bar shows spending by category. The 3-letter codes represent categories,
+with consistent ordering by overall spending (highest to lowest) across all months.
+The length of each segment is proportional to its share of that month's spending.
+
+#+begin_verse
+2024-06 *£ 746* /prs2____________________/fod1_________/utl1___/amz1__/atm1_______/trn0/shp1______/
+2024-05 *£ 712* /prs2____________________/fod1________/o1_____________/utl1___/pay0/dnt1__/
+2024-04 *£ 809* /prs2____________________/fod1_______/o3_____________________________/utl1___/amz1_____/pet0_/
+2024-03 *£1292* /hse8________________________________________________________________________________________/fod1_______/o2________________/utl1___/pay0_/atm0_/
+2024-02 *£ 610* /prs2____________________/fod2________________/o1_____/amz1___/
+2024-01 *£ 354* /fod1______/utl1___/amz0_/pay1_____/
+#+end_verse
+
+No monthly spending data available.
+
+** Monthly Spending by Category
+
+This table shows spending breakdown for each month by top categories:
+
+#+NAME: monthly-categories-table
+|   Month |   Total |    prs |    hse |    fod |      o |   utl |   amz |   pay |    atm |   web |   trn |   str |   shp |   dnt |   txi |   pet |   bet |   sav |
+| 2024-06 |  745.70 | 200.00 |   0.00 | 111.49 |  17.98 | 65.50 | 55.25 | 28.50 | 100.00 | 25.00 | 42.00 | 13.99 | 85.99 |  0.00 |  0.00 |  0.00 |  0.00 |  0.00 |
+| 2024-05 |  711.92 | 200.00 |   0.00 | 105.75 | 125.44 | 65.50 | 32.99 | 40.00 |   0.00 | 25.00 |  0.00 | 13.99 |  0.00 | 60.00 | 18.25 |  0.00 | 25.00 |  0.00 |
+| 2024-04 |  808.76 | 200.00 |   4.99 |  94.45 | 255.84 | 65.50 | 78.50 |  0.00 |   0.00 | 20.00 | 18.50 | 25.98 |  0.00 |  0.00 |  0.00 | 45.00 |  0.00 |  0.00 |
+| 2024-03 | 1291.98 |   0.00 | 750.00 |  95.25 | 155.00 | 65.50 | 28.99 | 45.00 |  50.00 | 25.00 | 22.50 | 13.99 |  0.00 |  0.00 | 15.75 |  0.00 |  0.00 | 25.00 |
+| 2024-02 |  609.94 | 200.00 |   0.00 | 167.85 |  62.93 | 15.99 | 65.75 | 35.99 |   0.00 |  0.00 | 35.45 | 25.98 |  0.00 |  0.00 |  0.00 |  0.00 |  0.00 |  0.00 |
+| 2024-01 |  354.43 |   0.00 |   0.00 |  88.75 |   4.95 | 65.50 | 45.30 | 78.44 |   0.00 | 25.00 |  0.00 | 13.99 |  0.00 |  0.00 | 12.50 |  0.00 | 20.00 |  0.00 |
+
+*** Monthly Spending Visualization (Stacked Categories)
+
+The following visualization shows monthly spending with each bar stacked by category:
+
+#+name: reverse-data
+#+begin_src emacs-lisp :var data=monthly-categories-table
+  (cons (car data) (reverse (cdr data)))
+#+end_src
+
+#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-stacked.png :execute_on_open t :results file :exports results
+set terminal png size 1200,600 enhanced font 'Verdana,10'
+set style data histograms
+set style histogram rowstacked
+set boxwidth 0.75 relative
+set style fill solid 1.0 border -1
+set title 'Monthly Spending by Category'
+set xlabel 'Month'
+set ylabel 'Amount (£)'
+set xtics rotate by -45
+set key outside right top vertical
+set auto x
+set yrange [0:*]
+set grid ytics
+plot for [i=3:(3+17-1)] \
+     data using i:xtic(1) title columnheader(i), \
+data using 0:2 with linespoints \
+linecolor rgb "#000000" linewidth 3 pointtype 7 pointsize 1.5 title "Total"
+#+end_src
+
+#+ATTR_ORG: :width 800
+#+RESULTS:
+[[file:financial-report--monthly-spending-stacked.png]]
+
+*** Monthly Spending with Individual Categories
+
+This plot shows each category separately across months for detailed comparison:
+
+#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-categories.png :execute_on_open t :results file :exports results
+set terminal png size 1200,600 enhanced font 'Verdana,10'
+set title 'Monthly Spending by Category'
+set xlabel 'Month'
+set ylabel 'Amount (£)'
+set style data linespoints
+set key outside right top vertical
+set xtics rotate by -45
+set grid
+set auto x
+# Plot each category as a separate line
+plot for [i=3:(3+17-1)] \
+     data using 0:i:xtic(1) title columnheader(i) with linespoints pointtype i-2 lw 2
+#+end_src
+
+#+ATTR_ORG: :width 800
+#+RESULTS:
+[[file:financial-report--monthly-spending-categories.png]]
+
+** Monthly Category Breakdowns
+
+Generated 6 monthly breakdown files in: /home/jdyer/source/repos/bank-buddy/tests/bank-buddy-monthly-plots
+
+#+ATTR_ORG: :width 600
+[[file:bank-buddy-monthly-plots/plot-202406-breakdown.png]]
+[[file:bank-buddy-monthly-plots/plot-202405-breakdown.png]]
+[[file:bank-buddy-monthly-plots/plot-202404-breakdown.png]]
+[[file:bank-buddy-monthly-plots/plot-202403-breakdown.png]]
+[[file:bank-buddy-monthly-plots/plot-202402-breakdown.png]]
+[[file:bank-buddy-monthly-plots/plot-202401-breakdown.png]]
+*** Viewing Monthly Breakdowns Sequentially
+
+To view the monthly breakdowns in sequence:
+
+1. Open an image viewer that supports wildcard patterns
+2. Navigate to: /home/jdyer/source/repos/bank-buddy/tests/bank-buddy-monthly-plots
+3. Open the pattern: plot-*-breakdown.png
+
+Many image viewers will allow you to step through these images in chronological order.
+
+Note: Categories in all plots are ordered consistently based on the top-spending categories across the entire time period (limited to top 20 categories).
+
+* Top Merchants
+
+Analysis of merchant spending across 6 months:
+
+- *Total merchant spending:* £4522.73
+- *Monthly average (all merchants):* £753.79
+- *Yearly average (all merchants):* £9045.46
+
+#+NAME: top-merchants
+| Merchant                    | Total Spend | Percentage | Monthly Avg | Yearly Avg |
+|-----------------------------+-------------+------------+-------------+------------|
+| KATHERINE-ALLOWANCE         |      800.00 |      17.7% |      133.33 |    1600.00 |
+| NATWEST-BANK-REFERENCE-RENT |      750.00 |      16.6% |      125.00 |    1500.00 |
+| VIRGIN-MEDIA-MONTHLY        |      327.50 |       7.2% |       54.58 |     655.00 |
+| AMAZON-PURCHASE             |      306.78 |       6.8% |       51.13 |     613.56 |
+| SAINSBURYS-GROCERIES        |      289.75 |       6.4% |       48.29 |     579.50 |
+| IKEA-FURNITURE              |      245.99 |       5.4% |       41.00 |     491.98 |
+| PAYPAL-TRANSFER             |      227.93 |       5.0% |       37.99 |     455.86 |
+| ASDA-GROCERIES              |      170.95 |       3.8% |       28.49 |     341.90 |
+| TESCO-GROCERIES             |      144.35 |       3.2% |       24.06 |     288.70 |
+| NEXT-RETAIL-LTD             |      125.00 |       2.8% |       20.83 |     250.00 |
+| RAILWAY-TICKET              |      118.45 |       2.6% |       19.74 |     236.90 |
+| WAITROSE-GROCERIES          |      115.45 |       2.6% |       19.24 |     230.90 |
+| NOTEMACHINE-WITHDRAWAL      |      100.00 |       2.2% |       16.67 |     200.00 |
+| THREE-MOBILE                |      100.00 |       2.2% |       16.67 |     200.00 |
+| RIVER-ISLAND-CLOTHES        |       85.99 |       1.9% |       14.33 |     171.98 |
+| NETFLIX-SUBSCRIPTION        |       83.94 |       1.9% |       13.99 |     167.88 |
+| DENTIST-APPOINTMENT         |       60.00 |       1.3% |       10.00 |     120.00 |
+| WITHDRAWAL-ATM              |       50.00 |       1.1% |        8.33 |     100.00 |
+| UBER-RIDE                   |       46.50 |       1.0% |        7.75 |      93.00 |
+| SKY-SUBSCRIPTION            |       45.99 |       1.0% |        7.67 |      91.98 |
+
+#+begin_src gnuplot :var data=top-merchants :file financial-report--top-merchants.png :execute_on_open t :results file :exports results
+set terminal png size 800,600
+set style data histogram
+set style fill solid
+set boxwidth 0.8
+set xtics rotate by -45
+set ylabel "Amount"
+set title "Top Spending Categories"
+plot data using 4:xtic(1) with boxes title "Amount"
+#+end_src
+
+#+ATTR_ORG: :width 600
+#+RESULTS:
+[[file:financial-report--top-merchants.png]]
+
+Monthly and yearly averages are calculated based on the total duration of the data.
+
+* Recurring Subscriptions (Detected)
+
+Estimated monthly cost from detected recurring payments: *£13.99*
+(Note: Detection is based on pattern matching and frequency analysis, may not be exhaustive or perfectly accurate.)
+
+1. *Netflix:* £13.99/month
+
+* Transaction Size Distribution
+
+- *Under £10:* 8 transactions (11.0%)
+- *£10 to £50:* 38 transactions (52.1%)
+- *£50 to £100:* 18 transactions (24.7%)
+- *Over £100:* 9 transactions (12.3%)
+
+* Unmatched Transactions
+
+The following transactions were only matched by the catch-all pattern (".*"). You may want to add specific patterns for these in `bank-buddy-core-cat-list-defines`
+
+#+begin_src text
+AUDIBLE-SUBSCRIPTION
+BET365-RACES
+DISNEY+-SUBSCRIPTION
+IKEA-FURNITURE
+NEXT-RETAIL-LTD
+NOWTV-SUBSCRIPTION
+ROYAL-MAIL-POSTAGE
+SKY-SUBSCRIPTION
+SPOTIFY-PREMIUM
+STARBUCKS-COFFEE
+STARBUCKS-COFFEE
+WAITROSE-GROCERIES
+#+end_src
