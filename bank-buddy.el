@@ -38,7 +38,9 @@
 ;;
 ;;; Quick Start
 ;;
-;;  (use-package bank-buddy)
+;;  (use-package bank-buddy
+;;    :hook
+;;    (org-mode . bank-buddy-cat-maybe-enable)
 ;;
 ;;  1. Export your bank statement as a CSV file
 ;;  2. Edit CSV using csv-mode for all lines to DATE,DESCRIPTION,AMOUNT

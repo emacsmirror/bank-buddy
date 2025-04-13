@@ -78,7 +78,10 @@ Refactor code and improve customization options
 *** MELPA
 
 #+begin_src emacs-lisp
-(use-package bank-buddy)
+(use-package bank-buddy
+  :hook
+  (org-mode . bank-buddy-cat-maybe-enable))
+
 #+end_src
 
 *** Manual Installation
@@ -94,20 +97,17 @@ git clone https://github.com/captainflasmr/bank-buddy.git
 #+begin_src emacs-lisp
 (add-to-list 'load-path "path/to/bank-buddy")
 (require 'bank-buddy)
+(add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable)
 #+end_src
 
 OR
 
 #+begin_src elisp
  (use-package bank-buddy
-   :load-path "path/to/bank-buddy")
-#+end_src
+   :load-path "path/to/bank-buddy"
+   :hook
+   (org-mode . bank-buddy-cat-maybe-enable))
 
-OR
-
-#+begin_src elisp
-(add-to-list 'load-path "/path/to/bank-buddy")
-(require 'bank-buddy)
 #+end_src
 
 * Quick Start
