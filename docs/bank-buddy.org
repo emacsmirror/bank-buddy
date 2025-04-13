@@ -1,0 +1,851 @@
+<<Top>>
+
+Next: [[#Introduction][Introduction]]   [[[#Index][Index]]]
+
+* Bank Buddy [[#Bank-Buddy][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Bank-Buddy
+:CLASS: top
+:END:
+Copyright © 2025 Your Name
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts. A
+copy of the license is included in the section entitled “GNU Free
+Documentation License”.
+
+- [[#Introduction][Introduction]]
+- [[#Installation][Installation]]
+- [[#Quick-Start][Quick Start]]
+- [[#CSV-Format][CSV Format]]
+- [[#Report-Generation][Report Generation]]
+- [[#Report-Sections][Report Sections]]
+- [[#Transaction-Categories][Transaction Categories]]
+- [[#Subscription-Detection][Subscription Detection]]
+- [[#Category-Management][Category Management]]
+- [[#Customization][Customization]]
+- [[#Key-Bindings][Key Bindings]]
+- [[#Comparison][Comparison]]
+- [[#Troubleshooting][Troubleshooting]]
+- [[#Index][Index]]
+
+--------------
+
+<<Introduction>>
+
+Next: [[#Installation][Installation]], Previous: [[#Top][Bank Buddy]],
+Up: [[#Top][Bank Buddy]]   [[[#Index][Index]]]
+
+** 1 Introduction [[#Introduction-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Introduction-1
+:CLASS: chapter
+:END:
+Bank Buddy is an Emacs package that provides comprehensive financial
+analysis and reporting capabilities for your bank statements. It
+processes CSV bank statement data, categorizes transactions using
+customizable patterns, and generates detailed reports in Org-mode
+format.
+
+*** Key Features [[#Key-Features][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Key-Features
+:CLASS: heading
+:END:
+- *Asynchronous Processing:* Efficiently handles large bank statements
+  without blocking Emacs
+- *Smart Transaction Categorization:* Auto-categorizes transactions
+  based on customizable regex patterns
+- *Comprehensive Financial Reports:* Generates detailed reports in
+  Org-mode with various analysis sections
+- *Interactive Category Management:* Edit and refine categorization
+  patterns directly from reports
+- *Data Visualizations:* Generates charts and graphs using org-plot
+- *Subscription Detection:* Automatically identifies recurring payments
+  and estimates monthly costs
+- *CSV-focused Analysis:* Designed specifically for bank statement CSV
+  files
+
+*** Why Bank Buddy? [[#Why-Bank-Buddy_003f][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Why-Bank-Buddy_003f
+:CLASS: heading
+:END:
+Bank Buddy was developed to solve specific pain points in analyzing
+personal bank statements:
+
+1. *Automatic Categorization:* Most financial tools require manual
+   categorization or complex rules for imports. Bank Buddy learns and
+   improves categorization over time.
+2. *Focus on Insights:* Unlike general accounting systems that focus on
+   balancing books, Bank Buddy helps you discover spending patterns and
+   optimize your finances.
+3. *Real Bank Statement Analysis:* Designed to work directly with actual
+   bank statement CSV exports, not idealized financial data.
+4. *Low Maintenance:* No need to manually enter transactions or maintain
+   a complex financial system - just periodically analyze your bank
+   statements.
+5. *Emacs Native:* Built entirely within the Emacs ecosystem, leveraging
+   Org-mode for rich, interactive reports.
+
+--------------
+
+<<Installation>>
+
+Next: [[#Quick-Start][Quick Start]], Previous:
+[[#Introduction][Introduction]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 2 Installation [[#Installation-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Installation-1
+:CLASS: chapter
+:END:
+*** MELPA [[#MELPA][¶]]
+:PROPERTIES:
+:CUSTOM_ID: MELPA
+:CLASS: heading
+:END:
+The recommended way to install Bank Buddy is through MELPA:
+
+#+begin_src example-preformatted
+M-x package-install RET bank-buddy RET
+#+end_src
+
+*** Manual Installation [[#Manual-Installation][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Manual-Installation
+:CLASS: heading
+:END:
+1. Download the repository or clone it:
+
+   #+begin_src example-preformatted
+   git clone https://github.com/captainflasmr/bank-buddy.git
+   #+end_src
+
+2. Add the directory to your load path and require the package:
+
+   #+begin_src example-preformatted
+   (add-to-list 'load-path "/path/to/bank-buddy")
+   (require 'bank-buddy)
+   (require 'bank-buddy-cat-mode)
+   #+end_src
+
+*** Dependencies [[#Dependencies][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Dependencies
+:CLASS: heading
+:END:
+- Emacs 26.1 or later
+- csv.el
+- async.el
+- org-mode (for reports and plotting)
+
+--------------
+
+<<Quick-Start>>
+
+Next: [[#CSV-Format][CSV Format]], Previous:
+[[#Installation][Installation]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 3 Quick Start [[#Quick-Start-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Quick-Start-1
+:CLASS: chapter
+:END:
+1. Export your bank statement as a CSV file
+2. Run: =M-x bank-buddy-generate-report=
+3. Select your CSV file
+4. Choose where to save the Org-mode report
+5. Open the generated report
+
+--------------
+
+<<CSV-Format>>
+
+Next: [[#Report-Generation][Report Generation]], Previous:
+[[#Quick-Start][Quick Start]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 4 CSV Format [[#CSV-Format-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: CSV-Format-1
+:CLASS: chapter
+:END:
+Bank Buddy expects CSV files with at least the following columns:
+
+- Transaction date
+- Transaction description
+- Debit amount
+
+Different banks format their CSV exports differently. You may need to
+preprocess your CSV to match this format.
+
+For optimal results, your CSV should include:
+
+- Date format :: YYYY-MM-DD format is preferred
+
+- Description :: The merchant name or transaction description
+
+- Amount :: Positive values for debits (money spent)
+
+--------------
+
+<<Report-Generation>>
+
+Next: [[#Report-Sections][Report Sections]], Previous:
+[[#CSV-Format][CSV Format]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 5 Report Generation [[#Report-Generation-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Report-Generation-1
+:CLASS: chapter
+:END:
+To generate a financial report:
+
+#+begin_src example-preformatted
+M-x bank-buddy-generate-report
+#+end_src
+
+You'll be prompted to select an input CSV file and specify the output
+Org file.
+
+The package processes the data asynchronously, so Emacs remains
+responsive even with large CSV files. When processing is complete,
+you'll be asked if you want to open the generated report.
+
+*** Command Options [[#Command-Options][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Command-Options
+:CLASS: heading
+:END:
+- =bank-buddy-generate-report= :: Generate a financial report from a CSV
+  file
+
+--------------
+
+<<Report-Sections>>
+
+Next: [[#Transaction-Categories][Transaction Categories]], Previous:
+[[#Report-Generation][Report Generation]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 6 Report Sections [[#Report-Sections-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Report-Sections-1
+:CLASS: chapter
+:END:
+The generated report is an Org-mode file with the following sections:
+
+*** Summary Overview [[#Summary-Overview][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Summary-Overview
+:CLASS: heading
+:END:
+Shows transaction count, date range, total spending, and average
+spending metrics.
+
+#+begin_src example-preformatted
+,* Summary Overview
+
+- *Total Transactions Analyzed:* 137
+- *Date Range:* 2024-01-01 to 2024-03-31 (91 days)
+- *Total Spending:* £4,235.78
+- *Average Daily Spending:* £46.55
+- *Average Weekly Spending:* £325.83
+#+end_src
+
+*** Top Spending Categories [[#Top-Spending-Categories][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Top-Spending-Categories
+:CLASS: heading
+:END:
+Lists the highest spending categories with percentages and averages.
+
+#+begin_src example-preformatted
+,* Top Spending Categories
+
+1. /hse/ *Housing:* £1,200.00 (28.3%)
+   - Monthly avg: £400.00, Yearly avg: £4,800.00
+2. /fod/ *Food:* £875.50 (20.7%)
+   - Monthly avg: £291.83, Yearly avg: £3,502.00
+3. /utl/ *Utilities:* £432.25 (10.2%)
+   - Monthly avg: £144.08, Yearly avg: £1,729.00
+#+end_src
+
+*** Monthly Spending Patterns [[#Monthly-Spending-Patterns][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Monthly-Spending-Patterns
+:CLASS: heading
+:END:
+Displays spending over time with a visual category breakdown.
+
+#+begin_src example-preformatted
+,* Monthly Spending Patterns
+
+- *Highest Month:* 2024-02 (£1,576.32)
+- *Lowest Month:* 2024-01 (£1,245.78)
+- *Average Monthly Spending:* £1,411.93
+
+Each bar shows spending by category. The 3-letter codes represent categories,
+with consistent ordering by overall spending (highest to lowest) across all months.
+The length of each segment is proportional to its share of that month's spending.
+
+,#+begin_verse
+2024-01 *£1246* /hse_____/fod___/utl_/str/
+2024-02 *£1576* /hse_____/fod____/utl__/shp_/
+2024-03 *£1414* /hse_____/fod___/utl__/str/web/
+,#+end_verse
+#+end_src
+
+*** Top Merchants [[#Top-Merchants][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Top-Merchants
+:CLASS: heading
+:END:
+Lists merchants where you spend the most money.
+
+#+begin_src example-preformatted
+,* Top Merchants
+
+- *Total merchant spending:* £4,235.78
+- *Monthly average (all merchants):* £1,411.93
+- *Yearly average (all merchants):* £16,943.12
+
+1. *RENT-PAYMENT:* £1,200.00 (28.3%)
+   - Monthly avg: £400.00, Yearly avg: £4,800.00
+2. *SAINSBURYS:* £345.67 (8.2%)
+   - Monthly avg: £115.22, Yearly avg: £1,382.68
+#+end_src
+
+*** Recurring Subscriptions [[#Recurring-Subscriptions][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Recurring-Subscriptions
+:CLASS: heading
+:END:
+Identifies and estimates costs of regular payments.
+
+#+begin_src example-preformatted
+,* Recurring Subscriptions (Detected)
+
+Estimated monthly cost from detected recurring payments: *£45.97*
+(Note: Detection is based on pattern matching and frequency analysis)
+
+1. *Netflix:* £9.99/month
+2. *Spotify:* £9.99/month
+3. *Amazon Prime:* £7.99/month
+#+end_src
+
+*** Transaction Size Distribution [[#Transaction-Size-Distribution][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Transaction-Size-Distribution
+:CLASS: heading
+:END:
+Shows the distribution of transaction amounts.
+
+#+begin_src example-preformatted
+,* Transaction Size Distribution
+
+- *Under £10:* 42 transactions (30.7%)
+- *£10 to £50:* 65 transactions (47.4%)
+- *£50 to £100:* 23 transactions (16.8%)
+- *Over £100:* 7 transactions (5.1%)
+#+end_src
+
+*** Unmatched Transactions [[#Unmatched-Transactions][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Unmatched-Transactions
+:CLASS: heading
+:END:
+Lists transactions that weren't matched by specific patterns.
+
+#+begin_src example-preformatted
+,* Unmatched Transactions
+
+The following transactions were only matched by the catch-all pattern (".*").
+You may want to add specific patterns for these in `bank-buddy-cat-list-defines`
+
+,#+begin_src text
+CORNER-SHOP
+PARKING-FEE-LONDON
+JOHN-HARDWARE-STORE
+,#+end_src
+#+end_src
+
+*** Data Visualizations [[#Data-Visualizations][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Data-Visualizations
+:CLASS: heading
+:END:
+Charts and graphs of your financial data using org-plot.
+
+--------------
+
+<<Transaction-Categories>>
+
+Next: [[#Subscription-Detection][Subscription Detection]], Previous:
+[[#Report-Sections][Report Sections]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 7 Transaction Categories [[#Transaction-Categories-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Transaction-Categories-1
+:CLASS: chapter
+:END:
+Bank Buddy uses regular expression patterns to categorize transactions.
+These are defined in the variable =bank-buddy-cat-list-defines=.
+
+*** Default Categories [[#Default-Categories][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Default-Categories
+:CLASS: heading
+:END:
+Bank Buddy comes with predefined categories including:
+
+| Category Code | Description          | Example Patterns                               |
+|---------------+----------------------+------------------------------------------------|
+| kat           | Personal (Katherine) | katherine, lucinda, kate                       |
+| trn           | Transport            | railw, railway, selfserve, train               |
+| pay           | PayPal               | paypal                                         |
+| utl           | Utilities            | virgin-media, insurance, electric, water       |
+| bet           | Betting              | sky-betting, b365, races, bet365               |
+| pen           | Pension              | stakeholde, widows                             |
+| sav           | Savings              | nsibill, vines, ns&i, saver                    |
+| txi           | Taxi                 | uber, aqua                                     |
+| fod           | Food                 | sainsburys, waitrose, tesco, domino, deliveroo |
+| shp           | Shopping             | ebay, asos, next, argos, amazon                |
+| o             | Other                | .* (catch-all)                                 |
+
+*** Category Format [[#Category-Format][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Category-Format
+:CLASS: heading
+:END:
+Categories are defined as patterns in the form:
+
+#+begin_src example-preformatted
+(REGEX-PATTERN CATEGORY-CODE)
+#+end_src
+
+Where:
+
+- =REGEX-PATTERN= is a regular expression that matches transaction
+  descriptions
+- =CATEGORY-CODE= is a short code representing the category (e.g., "fod"
+  for food)
+
+Example:
+
+#+begin_src example-preformatted
+("amazon\\|amz" "amz")  ; Amazon purchases
+("netflix\\|spotify\\|youtube" "str")  ; Streaming services
+#+end_src
+
+*** Customizing Categories [[#Customizing-Categories][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Customizing-Categories
+:CLASS: heading
+:END:
+You can customize the category patterns by setting
+=bank-buddy-cat-list-defines=:
+
+#+begin_src example-preformatted
+(customize-set-variable 'bank-buddy-cat-list-defines
+  '(("amazon\\|amz" "amz")
+    ("netflix\\|spotify" "str")
+    ("uber\\|lyft" "txi")
+    ("sainsburys\\|tesco\\|asda" "fod")
+    ;; Add your own patterns here
+    (".*" "o")))  ; Catch-all pattern should be last
+#+end_src
+
+*** Customizing Category Names [[#Customizing-Category-Names][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Customizing-Category-Names
+:CLASS: heading
+:END:
+Category codes are mapped to human-readable names via
+=bank-buddy-category-names=:
+
+#+begin_src example-preformatted
+(customize-set-variable 'bank-buddy-category-names
+  '(("amz" . "Amazon")
+    ("str" . "Streaming Services")
+    ("txi" . "Taxi & Rideshare")
+    ("fod" . "Groceries")
+    ;; Add your own mappings here
+    ("o" . "Other")))
+#+end_src
+
+--------------
+
+<<Subscription-Detection>>
+
+Next: [[#Category-Management][Category Management]], Previous:
+[[#Transaction-Categories][Transaction Categories]], Up: [[#Top][Bank
+Buddy]]   [[[#Index][Index]]]
+
+** 8 Subscription Detection [[#Subscription-Detection-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Subscription-Detection-1
+:CLASS: chapter
+:END:
+Bank Buddy can automatically detect recurring payments like
+subscriptions or regular bills. This is especially useful for
+identifying forgotten or unnecessary recurring charges.
+
+*** How It Works [[#How-It-Works][¶]]
+:PROPERTIES:
+:CUSTOM_ID: How-It-Works
+:CLASS: heading
+:END:
+Bank Buddy looks for transactions that:
+
+- Appear multiple times (configurable via
+  =bank-buddy-subscription-min-occurrences=)
+- Have the same or very similar amounts
+- Occur at regular intervals (weekly, bi-weekly, monthly, or annually)
+
+*** Subscription Patterns [[#Subscription-Patterns][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Subscription-Patterns
+:CLASS: heading
+:END:
+Define specific subscription patterns for better detection:
+
+#+begin_src example-preformatted
+(customize-set-variable 'bank-buddy-subscription-patterns
+  '(("NETFLIX" . "Netflix")
+    ("SPOTIFY" . "Spotify")
+    ("AMAZON PRIME" . "Amazon Prime")
+    ;; Add your own patterns here
+    ))
+#+end_src
+
+*** Frequency Analysis [[#Frequency-Analysis][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Frequency-Analysis
+:CLASS: heading
+:END:
+Bank Buddy estimates the frequency of subscriptions:
+
+- =Weekly= :: Transactions occurring approximately every 5-10 days
+
+- =Bi-weekly= :: Transactions occurring approximately every 11-20 days
+
+- =Monthly= :: Transactions occurring approximately every 25-35 days
+
+- =Annual= :: Transactions occurring approximately every 350-380 days
+
+- =Irregular= :: Transactions that occur multiple times but not at
+  regular intervals
+
+--------------
+
+<<Category-Management>>
+
+Next: [[#Customization][Customization]], Previous:
+[[#Subscription-Detection][Subscription Detection]], Up: [[#Top][Bank
+Buddy]]   [[[#Index][Index]]]
+
+** 9 Category Management [[#Category-Management-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Category-Management-1
+:CLASS: chapter
+:END:
+Bank Buddy includes an interactive mode for managing transaction
+categories: =bank-buddy-cat-mode=.
+
+*** Enabling bank-buddy-cat-mode [[#Enabling-bank_002dbuddy_002dcat_002dmode][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Enabling-bank_002dbuddy_002dcat_002dmode
+:CLASS: heading
+:END:
+When viewing a Bank Buddy report, the mode is automatically enabled. You
+can also enable it manually:
+
+#+begin_src example-preformatted
+M-x bank-buddy-cat-mode
+#+end_src
+
+*** Adding New Categories [[#Adding-New-Categories][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Adding-New-Categories
+:CLASS: heading
+:END:
+To add a transaction to a category:
+
+1. Navigate to an unmatched transaction (in the "Unmatched Transactions"
+   section)
+2. Press =C-c C-a= (=bank-buddy-cat-add-pattern=)
+3. Choose an existing category or create a new one
+4. Optionally save the updated category definitions to your init file
+5. Regenerate the report to see the changes
+
+*** Regenerating Reports [[#Regenerating-Reports][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Regenerating-Reports
+:CLASS: heading
+:END:
+After modifying categories, regenerate the report:
+
+#+begin_src example-preformatted
+C-c C-r (bank-buddy-cat-regenerate-report)
+#+end_src
+
+*** Viewing Unmatched Transactions [[#Viewing-Unmatched-Transactions][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Viewing-Unmatched-Transactions
+:CLASS: heading
+:END:
+To quickly view and manage unmatched transactions:
+
+#+begin_src example-preformatted
+M-x bank-buddy-view-unmatched-transactions
+#+end_src
+
+*** Saving Category Definitions [[#Saving-Category-Definitions][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Saving-Category-Definitions
+:CLASS: heading
+:END:
+When adding a new category pattern, you'll be asked if you want to save
+the updated definitions to your init file.
+
+--------------
+
+<<Customization>>
+
+Next: [[#Key-Bindings][Key Bindings]], Previous:
+[[#Category-Management][Category Management]], Up: [[#Top][Bank Buddy]]
+  [[[#Index][Index]]]
+
+** 10 Customization [[#Customization-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Customization-1
+:CLASS: chapter
+:END:
+*** Core Settings [[#Core-Settings][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Core-Settings
+:CLASS: heading
+:END:
+
+#+begin_src example-preformatted
+;; Exclude large transactions from analysis
+(setq bank-buddy-exclude-large-txns t)
+(setq bank-buddy-large-txn-threshold 2000)
+
+;; Number of occurrences to detect subscriptions
+(setq bank-buddy-subscription-min-occurrences 3)
+
+;; Number of top items to display
+(setq bank-buddy-top-spending-categories 5)
+(setq bank-buddy-top-merchants 5)
+#+end_src
+
+*** All Customizable Variables [[#All-Customizable-Variables][¶]]
+:PROPERTIES:
+:CUSTOM_ID: All-Customizable-Variables
+:CLASS: heading
+:END:
+| Variable                                | Default   | Description                                          |
+|-----------------------------------------+-----------+------------------------------------------------------|
+| bank-buddy-exclude-large-txns           | t         | Whether to exclude large transactions                |
+| bank-buddy-large-txn-threshold          | 2000      | Threshold for large transactions (in currency units) |
+| bank-buddy-subscription-min-occurrences | 3         | Minimum occurrences for subscription detection       |
+| bank-buddy-top-spending-categories      | 5         | Number of top spending categories displayed          |
+| bank-buddy-top-merchants                | 5         | Number of top merchants displayed                    |
+| bank-buddy-cat-list-defines             | (list...) | Categorization patterns for transactions             |
+| bank-buddy-category-names               | (list...) | Human-readable category names for reporting          |
+| bank-buddy-subscription-patterns        | (list...) | Patterns to identify specific subscriptions          |
+
+--------------
+
+<<Key-Bindings>>
+
+Next: [[#Comparison][Comparison]], Previous:
+[[#Customization][Customization]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 11 Key Bindings [[#Key-Bindings-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Key-Bindings-1
+:CLASS: chapter
+:END:
+*** Global Bindings [[#Global-Bindings][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Global-Bindings
+:CLASS: heading
+:END:
+| Key  | Command                                | Description                                                 |
+|------+----------------------------------------+-------------------------------------------------------------|
+| None | bank-buddy-generate-report             | Generate a new financial report                             |
+| None | bank-buddy-view-unmatched-transactions | View transactions that weren't matched by specific patterns |
+
+*** bank-buddy-cat-mode Bindings [[#bank_002dbuddy_002dcat_002dmode-Bindings][¶]]
+:PROPERTIES:
+:CUSTOM_ID: bank_002dbuddy_002dcat_002dmode-Bindings
+:CLASS: heading
+:END:
+| Key     | Command                          | Description                                             |
+|---------+----------------------------------+---------------------------------------------------------|
+| C-c C-a | bank-buddy-cat-add-pattern       | Add the transaction at point to a category              |
+| C-c C-r | bank-buddy-cat-regenerate-report | Regenerate the report with current category definitions |
+
+--------------
+
+<<Comparison>>
+
+Next: [[#Troubleshooting][Troubleshooting]], Previous:
+[[#Key-Bindings][Key Bindings]], Up: [[#Top][Bank Buddy]]  
+[[[#Index][Index]]]
+
+** 12 Comparison [[#Comparison-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Comparison-1
+:CLASS: chapter
+:END:
+Bank Buddy can be compared to several other Emacs packages for financial
+management.
+
+*** Ledger-mode [[#Ledger_002dmode][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Ledger_002dmode
+:CLASS: heading
+:END:
+Ledger-mode is an Emacs interface to the command-line Ledger accounting
+system.
+
+- Ledger is a complete double-entry accounting system; Bank Buddy is
+  focused on bank statement analysis
+- Ledger requires manual transaction entry or carefully formatted
+  imports; Bank Buddy automates categorization
+- Ledger offers more comprehensive accounting features; Bank Buddy
+  focuses on spending insights
+- Bank Buddy provides visual spending breakdowns and charts
+
+*When to use Ledger:* For complete personal finance tracking,
+investments, budgeting, and double-entry accounting. *When to use Bank
+Buddy:* For quick analysis of bank statements and visualizing spending
+patterns.
+
+*** Beancount-mode [[#Beancount_002dmode][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Beancount_002dmode
+:CLASS: heading
+:END:
+Beancount-mode is an Emacs mode for Beancount, another plain-text
+accounting system.
+
+- Beancount, like Ledger, is a full double-entry accounting system
+- Beancount has stricter syntax requirements than Ledger
+- Bank Buddy offers automatic categorization and reporting
+- Beancount generates sophisticated reports, but requires more setup
+
+*When to use Beancount:* For precise, auditable personal accounting with
+strict validation. *When to use Bank Buddy:* For simple spending
+analysis without learning accounting principles.
+
+*** Money [[#Money][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Money
+:CLASS: heading
+:END:
+Money is a simple package for tracking expenses in Org-mode.
+
+- Money uses simple org-mode tables for basic expense tracking
+- Money is designed for manual entry of expenses
+- Bank Buddy focuses on automated analysis of bank-provided data
+- Bank Buddy provides more sophisticated visualization
+
+*When to use Money:* For simple manual expense tracking in Org. *When to
+use Bank Buddy:* For analyzing historical bank data and discovering
+spending patterns.
+
+*** csv-mode and orgtbl-mode [[#csv_002dmode-and-orgtbl_002dmode][¶]]
+:PROPERTIES:
+:CUSTOM_ID: csv_002dmode-and-orgtbl_002dmode
+:CLASS: heading
+:END:
+Some users analyze financial CSV data using built-in Emacs packages.
+
+- These are general-purpose tools requiring manual customization
+- Bank Buddy provides specialized, financial-specific analysis
+- Bank Buddy automatically categorizes transactions
+- Bank Buddy generates comprehensive reports automatically
+
+*When to use csv/orgtbl-mode:* For custom, one-off analysis of financial
+data. *When to use Bank Buddy:* For consistent, repeatable analysis of
+bank statements.
+
+--------------
+
+<<Troubleshooting>>
+
+Next: [[#Index][Index]], Previous: [[#Comparison][Comparison]], Up:
+[[#Top][Bank Buddy]]   [[[#Index][Index]]]
+
+** 13 Troubleshooting [[#Troubleshooting-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Troubleshooting-1
+:CLASS: chapter
+:END:
+*** CSV Parsing Issues [[#CSV-Parsing-Issues][¶]]
+:PROPERTIES:
+:CUSTOM_ID: CSV-Parsing-Issues
+:CLASS: heading
+:END:
+If your bank's CSV format is not recognized:
+
+- Check that your CSV has columns for date, description, and debit
+  amount
+- Pre-process the CSV if necessary to match the expected format
+- Check for encoding issues if you see garbled text in reports
+
+*** Performance Considerations [[#Performance-Considerations][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Performance-Considerations
+:CLASS: heading
+:END:
+Bank Buddy processes CSV files asynchronously to avoid blocking Emacs.
+However, with very large files:
+
+- Initial parsing may take longer
+- Generated reports might be large
+- Consider filtering or pre-processing very large CSV files
+
+*** Common Issues [[#Common-Issues][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Common-Issues
+:CLASS: heading
+:END:
+- Unmatched Transactions :: Review and add patterns for your common
+  merchants using the category management mode
+
+- Duplicate Categories :: Check for overlapping regex patterns in your
+  category definitions
+
+- Date Format Issues :: Ensure dates are in YYYY-MM-DD format for best
+  results
+
+- Category Mistakes :: If transactions are being assigned to the wrong
+  categories, review your regex patterns, particularly those that might
+  be too broad
+
+--------------
+
+<<Index>>
+
+Previous: [[#Troubleshooting][Troubleshooting]], Up: [[#Top][Bank
+Buddy]]   [[[#Index][Index]]]
+
+** Index [[#Index-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Index-1
+:CLASS: unnumbered
+:END:
