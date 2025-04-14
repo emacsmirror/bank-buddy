@@ -3,7 +3,6 @@
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
 ;; Version: 0.1.1
-;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
 ;; Keywords: matching
 ;; URL: https://github.com/captainflasmr/bank-buddy
 ;;

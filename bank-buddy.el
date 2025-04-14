@@ -54,6 +54,7 @@
 (require 'bank-buddy-core)
 (require 'cl-lib)
 (require 'async)
+(require 'dired)
 
 (defgroup bank-buddy nil
   "Customization options for bank-buddy."
