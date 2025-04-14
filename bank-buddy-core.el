@@ -145,5 +145,14 @@
   :type '(alist :key-type string :value-type string)
   :group 'bank-buddy)
 
+(defun bank-buddy-core-log-to-file (message &optional file)
+  "Log a MESSAGE to a FILE."
+  (let ((logfile (or file "bank-buddy.log")))
+    (with-temp-buffer
+      ;; Insert the message into the buffer
+      (insert (format "%s\n" message))
+      ;; Append the contents of the buffer to the specified file
+      (write-region (point-min) (point-max) logfile t 'quiet))))
+
 (provide 'bank-buddy-core)
 ;;; bank-buddy-core.el ends here

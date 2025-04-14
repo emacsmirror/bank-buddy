@@ -203,7 +203,6 @@ Categories are ordered consistently based on global top spending categories."
         (global-category-order (bank-buddy-get-global-category-order))
         ;; Limit to top N categories as specified in customization
         (top-categories nil))
-    (prin1 output-dir)
     ;; Get top categories list limited by user setting
     (setq top-categories
           (cl-subseq global-category-order
@@ -309,146 +308,7 @@ Categories are ordered consistently based on global top spending categories."
     (insert "3. Open the pattern: plot-*-breakdown.png\n\n")
     (insert "Many image viewers will allow you to step through these images in chronological order.\n\n")
     (insert "Note: Categories in all plots are ordered consistently based on the top-spending categories ")
-    (insert (format "across the entire time period (limited to top %d categories).\n" bank-buddy-core-top-spending-categories)))
-
-;; Modified main report generation function
-(defun bank-buddy-generate-report (csv-file output-file)
-  "Generate financial report from CSV-FILE asynchronously and save to OUTPUT-FILE."
-  (interactive "fInput CSV file: \nFOutput Org file: ")
-
-  ;; Ensure async is available
-  (unless (fboundp 'async-start)
-    (error "Async.el library not found.  Please install and load it"))
-
-  ;; Ensure the CSV file exists and is readable
-  (unless (file-readable-p csv-file)
-    (error "Cannot read CSV file: %s" csv-file))
-
-  ;; Ensure the file paths are absolute
-  (setq csv-file (expand-file-name csv-file))
-  (setq output-file (expand-file-name output-file))
-  
-  ;; Inform the user that processing has started
-  (bank-buddy-show-progress (format "Starting analysis of %s..." (file-name-nondirectory csv-file)))
-
-  ;; Start the asynchronous task
-  (async-start
-   ;; The worker function
-   `(lambda ()
-      ;; Set up the environment for the async process
-      (setq load-path ',load-path)
-      
-      ;; Load minimal required libraries
-      (require 'cl-lib)
-      
-      ;; Load the bank-buddy package
-      (let ((bank-buddy-file ,(or load-file-name
-                                  (locate-library "bank-buddy")
-                                  (buffer-file-name))))
-        (when bank-buddy-file
-          (load-file bank-buddy-file))
-        
-        ;; Pass all needed variables to the worker
-        (let ((bank-buddy-core-exclude-large-txns ,bank-buddy-core-exclude-large-txns)
-              (bank-buddy-core-large-txn-threshold ,bank-buddy-core-large-txn-threshold)
-              (bank-buddy-core-subscription-min-occurrences ,bank-buddy-core-subscription-min-occurrences)
-              (bank-buddy-core-cat-list-defines ',bank-buddy-core-cat-list-defines)
-              (bank-buddy-core-subscription-patterns ',bank-buddy-core-subscription-patterns)
-              (bank-buddy-core-category-names ',bank-buddy-core-category-names))
-          
-          ;; Call the worker function and include file paths in the result
-          (let ((worker-result (bank-buddy--process-csv-async-worker ,csv-file)))
-            ;; Add the file paths to the result plist
-            (plist-put worker-result :csv-file ,csv-file)
-            (plist-put worker-result :output-file ,output-file)
-            worker-result))))
-   
-   ;; The callback function that uses file paths from the result
-   (lambda (result)
-     ;; Extract file paths from the result
-     (let ((csv-file (plist-get result :csv-file))
-           (output-file (plist-get result :output-file))
-           (worker-err (plist-get result :error))
-           (output-dir nil))
-       
-       (if worker-err
-           ;; Handle worker-reported error
-           (progn
-             (message "Bank Buddy: Background processing failed: %s" worker-err)
-             (display-warning 'bank-buddy (format "Background processing failed: %s" worker-err) :error))
-
-         ;; Process success (no worker error reported)
-         (progn
-           (bank-buddy-show-progress "Generating report..." t)
-
-           ;; Clear previous global data
-           (clrhash bank-buddy-cat-tot)
-           (clrhash bank-buddy-merchants)
-           (clrhash bank-buddy-monthly-totals)
-           (clrhash bank-buddy-txn-size-dist)
-           (clrhash bank-buddy-subs)
-           (clrhash bank-buddy-daily-cumulative-totals)
-           (setq bank-buddy-unmatched-transactions '()) ; Clear previous unmatched list
-           
-           (setq bank-buddy-date-first nil)
-           (setq bank-buddy-date-last nil)
-           ;; Populate globals from the returned plist
-           (setq bank-buddy-date-first (plist-get result :date-first))
-           (setq bank-buddy-date-last (plist-get result :date-last))
-           
-           (when (hash-table-p (plist-get result :cat-tot))
-             (maphash (lambda (k v) (puthash k v bank-buddy-cat-tot)) (plist-get result :cat-tot)))
-           (when (hash-table-p (plist-get result :merchants))
-             (maphash (lambda (k v) (puthash k v bank-buddy-merchants)) (plist-get result :merchants)))
-           (when (hash-table-p (plist-get result :monthly-totals))
-             (maphash (lambda (k v) (puthash k v bank-buddy-monthly-totals)) (plist-get result :monthly-totals)))
-           (when (hash-table-p (plist-get result :txn-size-dist))
-             (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
-           (when (hash-table-p (plist-get result :subs))
-             (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
-           (when (hash-table-p (plist-get result :daily-cumulative-totals))
-             (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals)) 
-                      (plist-get result :daily-cumulative-totals)))
-           
-           ;; Get the unmatched transactions list
-           (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
-           
-           ;; Determine output directory for images
-           (setq output-dir
-                 (bank-buddy-ensure-directory
-                  (expand-file-name
-                   "bank-buddy-monthly-plots"
-                   (or bank-buddy-core-output-directory
-                       (file-name-directory output-file)))))
-           
-           ;; Generate the report content in a temp buffer
-           (with-temp-buffer
-             (org-mode)
-             (insert "#+title: Financial Report (Bank Buddy)\n")
-             (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
-             (insert (format "#+date: %s\n" (format-time-string "%F %T")))
-             (insert "#+options: toc:1 num:nil\n")
-             (insert "#+startup: inlineimages showall\n\n")
-             (bank-buddy-generate-summary-overview)
-             (bank-buddy-generate-top-spending-categories)
-             (bank-buddy-generate-monthly-spending)
-             ;; Add our new function here to insert the monthly categories table
-             (bank-buddy-generate-monthly-categories-table)
-             ;; Add the NEW monthly breakdown plots
-             (bank-buddy-generate-monthly-category-breakdowns output-dir)
-             (bank-buddy-generate-monthly-progress-comparison)
-             (bank-buddy-generate-top-merchants)
-             (bank-buddy-generate-subscriptions)
-             (bank-buddy-generate-transaction-size-distribution)
-             (bank-buddy-generate-unmatched-transactions)
-             (write-region (point-min) (point-max) output-file nil 'quiet))
-           
-           (bank-buddy-show-progress
-            (format "Report generated successfully: %s\nMonthly plots saved to: %s"
-                    output-file output-dir) t)
-           
-           (when (yes-or-no-p (format "Open generated report %s now?" output-file))
-             (find-file output-file)))))))))
+    (insert (format "across the entire time period (limited to top %d categories).\n" bank-buddy-core-top-spending-categories))))
 
 (defun bank-buddy-generate-monthly-categories-table ()
   "Generate a comprehensive category table."
@@ -757,21 +617,6 @@ Argument SUBS ."
     ;; Return the assigned category (though not strictly needed by caller in async context)
     category-found))
 
-(defun log-to-file (message &optional file)
-  "Log a MESSAGE to a FILE. If FILE is not specified, use 'app.log'."
-  (let ((logfile (or file "app.log")))
-    (with-temp-buffer
-      ;; Insert the message into the buffer
-      (insert (format "%s\n" message))
-      ;; Append the contents of the buffer to the specified file
-      (write-region (point-min) (point-max) logfile t 'quiet))))
-
-;; Helper function to add days to a date
-(defun bank-buddy--add-days (date days)
-  (let* ((time (bank-buddy-parse-date date))
-         (new-time (time-add time (days-to-time days))))
-    (format-time-string "%Y-%m-%d" new-time)))
-
 ;; The core worker function to be run asynchronously.
 (defun bank-buddy--process-csv-async-worker (csv-file)
   "Parse CSV-FILE and process payments.  Return processed data as a list.
@@ -857,7 +702,6 @@ This function runs in a separate process via async.el."
                       (let ((month-day-key (concat month "-" day)))
                         ;; Calculate the cumulative total for the current day
                         (setq previous-day-total (+ previous-day-total debit))
-                        (log-to-file (format "##1 : %s : %s : %s" month day previous-day-total))
                         ;; Store the new cumulative total for the current day
                         (puthash month-day-key previous-day-total daily-cumulative-totals))
 
@@ -1483,6 +1327,7 @@ This function runs in a separate process via async.el."
            (clrhash bank-buddy-monthly-totals)
            (clrhash bank-buddy-txn-size-dist)
            (clrhash bank-buddy-subs)
+           (clrhash bank-buddy-daily-cumulative-totals)
            (setq bank-buddy-unmatched-transactions '()) ; Clear previous unmatched list
            
            (setq bank-buddy-date-first nil)
@@ -1501,6 +1346,9 @@ This function runs in a separate process via async.el."
              (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
+           (when (hash-table-p (plist-get result :daily-cumulative-totals))
+             (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals)) 
+                      (plist-get result :daily-cumulative-totals)))
            
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
@@ -1528,11 +1376,11 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-monthly-categories-table)
              ;; Add the NEW monthly breakdown plots
              (bank-buddy-generate-monthly-category-breakdowns output-dir)
+             (bank-buddy-generate-monthly-progress-comparison)
              (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-transaction-size-distribution)
              (bank-buddy-generate-unmatched-transactions)
-             (insert "\n-----\n")
              (write-region (point-min) (point-max) output-file nil 'quiet))
            
            (bank-buddy-show-progress
