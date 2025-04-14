@@ -72,6 +72,9 @@
 (defvar bank-buddy-payments '()
   "List of parsed payment transactions.  Populated by async callback.")
 
+(defvar bank-buddy-daily-cumulative-totals (make-hash-table :test 'equal)
+  "Hash table storing category totals.  Populated by async callback.")
+
 (defvar bank-buddy-cat-tot (make-hash-table :test 'equal)
   "Hash table storing category totals.  Populated by async callback.")
 
@@ -384,6 +387,7 @@ Categories are ordered consistently based on global top spending categories."
            (clrhash bank-buddy-monthly-totals)
            (clrhash bank-buddy-txn-size-dist)
            (clrhash bank-buddy-subs)
+           (clrhash bank-buddy-daily-cumulative-totals)
            (setq bank-buddy-unmatched-transactions '()) ; Clear previous unmatched list
            
            (setq bank-buddy-date-first nil)
@@ -402,6 +406,9 @@ Categories are ordered consistently based on global top spending categories."
              (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
+           (when (hash-table-p (plist-get result :daily-cumulative-totals))
+             (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals)) 
+                      (plist-get result :daily-cumulative-totals)))
            
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
@@ -429,6 +436,7 @@ Categories are ordered consistently based on global top spending categories."
              (bank-buddy-generate-monthly-categories-table)
              ;; Add the NEW monthly breakdown plots
              (bank-buddy-generate-monthly-category-breakdowns output-dir)
+             (bank-buddy-generate-monthly-progress-comparison)
              (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-transaction-size-distribution)
@@ -749,6 +757,21 @@ Argument SUBS ."
     ;; Return the assigned category (though not strictly needed by caller in async context)
     category-found))
 
+(defun log-to-file (message &optional file)
+  "Log a MESSAGE to a FILE. If FILE is not specified, use 'app.log'."
+  (let ((logfile (or file "app.log")))
+    (with-temp-buffer
+      ;; Insert the message into the buffer
+      (insert (format "%s\n" message))
+      ;; Append the contents of the buffer to the specified file
+      (write-region (point-min) (point-max) logfile t 'quiet))))
+
+;; Helper function to add days to a date
+(defun bank-buddy--add-days (date days)
+  (let* ((time (bank-buddy-parse-date date))
+         (new-time (time-add time (days-to-time days))))
+    (format-time-string "%Y-%m-%d" new-time)))
+
 ;; The core worker function to be run asynchronously.
 (defun bank-buddy--process-csv-async-worker (csv-file)
   "Parse CSV-FILE and process payments.  Return processed data as a list.
@@ -763,12 +786,14 @@ This function runs in a separate process via async.el."
         (cat-tot (make-hash-table :test 'equal))
         (merchants (make-hash-table :test 'equal))
         (monthly-totals (make-hash-table :test 'equal))
+        (daily-cumulative-totals (make-hash-table :test 'equal))
         (txn-size-dist (make-hash-table :test 'equal))
         (subs (make-hash-table :test 'equal))
         (bank-buddy-unmatched-transactions-local '()) ; New local list for unmatched transactions
         (date-first nil)
         (date-last nil)
-        (error-occurred nil))
+        (error-occurred nil)
+        (last-processed-date nil))
 
     ;; --- 1. Parsing (similar to bank-buddy-parse-csv-file) ---
     (condition-case err
@@ -796,13 +821,16 @@ This function runs in a separate process via async.el."
             ;; --- 2b. Process Payments loop ---
             (when (and payments (not error-occurred))
               (let ((total-transactions 0)
-                    (total-amount 0))
+                    (total-amount 0)
+                    (previous-day-total 0)
+                    (current-month ""))
                 (dolist (payment payments)
                   (let* ((date-cell (nth 0 payment))
                          (desc-cell (nth 1 payment))
                          (debit-cell (nth 2 payment))
                          (date (if date-cell (cdr date-cell) "")) ; Handle potentially nil cells
                          (month (if (>= (length date) 7) (substring date 0 7) "UNKNOWN"))
+                         (day (if (>= (length date) 10) (substring date 8 10) "00"))
                          (description (if desc-cell (cdr desc-cell) ""))
                          (debit-str (if debit-cell (cdr debit-cell) ""))
                          (debit (if (string-blank-p debit-str) 0 (string-to-number debit-str))))
@@ -811,6 +839,30 @@ This function runs in a separate process via async.el."
                     (when (and (numberp debit) ; Ensure debit is a number
                                (or (not bank-buddy-core-exclude-large-txns)
                                    (< debit bank-buddy-core-large-txn-threshold)))
+
+                      ;; Fill in missing days up to the end of the month
+                      (when last-processed-date
+                        (let* ((last-month (substring last-processed-date 0 7))
+                               (last-day (string-to-number (substring last-processed-date 8 10))))
+                          (dotimes (i (- 31 last-day))
+                            (let* ((fill-day (format "%02d" (+ last-day i 1)))
+                                   (fill-key (concat last-month "-" fill-day)))
+                              (puthash fill-key previous-day-total daily-cumulative-totals)))))
+                      
+                      ;; Reset previous-day-total if we are in a new month
+                      (when (not (string= current-month month))
+                        (setq current-month month)
+                        (setq previous-day-total 0))
+                      
+                      (let ((month-day-key (concat month "-" day)))
+                        ;; Calculate the cumulative total for the current day
+                        (setq previous-day-total (+ previous-day-total debit))
+                        (log-to-file (format "##1 : %s : %s : %s" month day previous-day-total))
+                        ;; Store the new cumulative total for the current day
+                        (puthash month-day-key previous-day-total daily-cumulative-totals))
+
+                      (setq last-processed-date date) ; Update the last processed date
+
                       (when (> debit 0) ;; Only count positive debits
                         ;; Call the local categorizer, passing local hash tables
                         (bank-buddy--categorize-payment-local
@@ -830,11 +882,60 @@ This function runs in a separate process via async.el."
           :cat-tot cat-tot
           :merchants merchants
           :monthly-totals monthly-totals
+          :daily-cumulative-totals daily-cumulative-totals
           :txn-size-dist txn-size-dist
           :subs subs
           :unmatched-transactions bank-buddy-unmatched-transactions-local)))
 
 ;; These functions assume the global variables have been populated by the async callback.
+
+(defun bank-buddy-generate-monthly-progress-comparison ()
+  "Generate a plot comparing monthly spending progress."
+  (let* ((current-date (format-time-string "%Y-%m-%d"))
+         (current-month (substring current-date 0 7))
+         (current-day (substring current-date 8 10))
+         (months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
+         (data-file (expand-file-name "monthly-progress-comparison.dat" bank-buddy-core-output-directory))
+         (plot-file (expand-file-name "monthly-progress-comparison.gp" bank-buddy-core-output-directory))
+         (image-file (expand-file-name "monthly-progress-comparison.png" bank-buddy-core-output-directory)))
+    
+    ;; Generate data file
+    (with-temp-file data-file
+      (insert "Day")
+      (dolist (month months)
+        (insert (format "\t%s" month)))
+      (insert "\n")
+      
+      (dotimes (day 31)
+        (let ((day-str (format "%02d" (1+ day))))
+          (insert day-str)
+          (dolist (month months)
+            (let* ((month-day-key (concat month "-" day-str))
+                   (amount (gethash month-day-key bank-buddy-daily-cumulative-totals 0)))
+              (insert (format "\t%.2f" amount))))
+          (insert "\n"))))
+    
+    ;; Generate gnuplot script
+    (with-temp-file plot-file
+      (insert "set terminal png size 800,600\n")
+      (insert (format "set output '%s'\n" image-file))
+      (insert "set title 'Monthly Spending Progress Comparison'\n")
+      (insert "set xlabel 'Day of Month'\n")
+      (insert "set ylabel 'Cumulative Spending (£)'\n")
+      (insert "set key outside right\n")
+      (insert "set xtics 1,5\n")
+      (insert "set grid\n")
+      (insert (format "plot for [i=2:%d] '%s' using 1:i with lines title columnhead\n"
+                      (1+ (length months)) data-file)))
+    
+    ;; Run gnuplot
+    (call-process "gnuplot" nil nil nil plot-file)
+    
+    ;; Insert the plot into the report
+    (insert "\n** Monthly Spending Progress Comparison\n\n")
+    (insert "This plot compares the cumulative spending progress for each month:\n\n")
+    (insert (format "#+ATTR_ORG: :width 800\n[[file:%s]]\n\n" image-file))
+    (insert "The plot shows how spending in the current month compares to previous months at the same point in time.\n")))
 
 (defun bank-buddy-generate-summary-overview ()
   "Generate summary overview section."
