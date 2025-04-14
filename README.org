@@ -78,9 +78,9 @@ Refactor code and improve customization options
 *** MELPA
 
 #+begin_src emacs-lisp
-(use-package bank-buddy
-  :hook
-  (org-mode . bank-buddy-cat-maybe-enable))
+(use-package bank-buddy)
+(with-eval-after-load 'bank-buddy
+  (add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable))
 
 #+end_src
 
@@ -103,11 +103,11 @@ git clone https://github.com/captainflasmr/bank-buddy.git
 OR
 
 #+begin_src elisp
- (use-package bank-buddy
-   :load-path "path/to/bank-buddy"
-   :hook
-   (org-mode . bank-buddy-cat-maybe-enable))
+(use-package bank-buddy
+  :load-path "path/to/bank-buddy")
 
+(with-eval-after-load 'bank-buddy
+  (add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable))
 #+end_src
 
 * Quick Start
