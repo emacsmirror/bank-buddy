@@ -206,9 +206,9 @@ Categories are ordered consistently based on global top spending categories."
     ;; Get top categories list limited by user setting
     (setq top-categories
           (cl-subseq global-category-order
-                      0
-                      (min (length global-category-order)
-                           bank-buddy-core-top-spending-categories)))
+                     0
+                     (min (length global-category-order)
+                          bank-buddy-core-top-spending-categories)))
     
     ;; Get all months and their category data
     (maphash
@@ -239,15 +239,17 @@ Categories are ordered consistently based on global top spending categories."
                     month-count output-dir))
     (insert "#+ATTR_ORG: :width 600\n")
     ;; Process each month
+    (make-directory (concat output-dir "/bank-buddy-monthly-plots"))
+
     (dolist (month-data all-monthly-cat-data)
       (let* ((month (car month-data))
              (cat-data-hash (make-hash-table :test 'equal)) ;; Hash for quick lookup
              (ordered-cat-data '()) ;; Will hold ordered data
              (month-total (gethash month bank-buddy-monthly-totals 0))
              (month-safe (replace-regexp-in-string "-" "" month))
-             (data-file (expand-file-name (format "data-breakdown-%s.txt" month-safe) output-dir))
-             (image-file (expand-file-name (format "plot-%s-breakdown.png" month-safe) output-dir))
-             (plot-file (expand-file-name (format "plot-%s-breakdown.gp" month-safe) output-dir)))
+             (data-file (expand-file-name (format "data-breakdown-%s.txt" month-safe) (concat output-dir "/bank-buddy-monthly-plots")))
+             (image-file (expand-file-name (format "plot-%s-breakdown.png" month-safe) (concat output-dir "/bank-buddy-monthly-plots")))
+             (plot-file (expand-file-name (format "plot-%s-breakdown.gp" month-safe) (concat output-dir "/bank-buddy-monthly-plots"))))
         
         (when (> month-total 0)
           ;; Put category data in hash for easy lookup
@@ -298,7 +300,7 @@ Categories are ordered consistently based on global top spending categories."
           
           ;; Insert entry in report
           (insert (format "[[file:%s]]\n"
-                          (file-relative-name image-file default-directory))))))
+                          (file-relative-name image-file output-dir))))))
     
     ;; Add instructions for viewing
     (insert "*** Viewing Monthly Breakdowns Sequentially\n\n")
@@ -733,15 +735,15 @@ This function runs in a separate process via async.el."
 
 ;; These functions assume the global variables have been populated by the async callback.
 
-(defun bank-buddy-generate-monthly-progress-comparison ()
+(defun bank-buddy-generate-monthly-progress-comparison (output-dir)
   "Generate a plot comparing monthly spending progress."
   (let* ((current-date (format-time-string "%Y-%m-%d"))
          (current-month (substring current-date 0 7))
          (current-day (substring current-date 8 10))
          (months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
-         (data-file (expand-file-name "monthly-progress-comparison.dat" bank-buddy-core-output-directory))
-         (plot-file (expand-file-name "monthly-progress-comparison.gp" bank-buddy-core-output-directory))
-         (image-file (expand-file-name "monthly-progress-comparison.png" bank-buddy-core-output-directory)))
+         (data-file (expand-file-name "monthly-progress-comparison.dat" output-dir))
+         (plot-file (expand-file-name "monthly-progress-comparison.gp" output-dir))
+         (image-file (expand-file-name "monthly-progress-comparison.png" output-dir)))
     
     ;; Generate data file
     (with-temp-file data-file
@@ -1107,7 +1109,7 @@ This function runs in a separate process via async.el."
           ;; Create category breakdown tables for each month
           (setq all-monthly-cat-data (sort all-monthly-cat-data
                                            (lambda (a b) (string< (car a) (car b)))))
-      (insert "No monthly spending data available.\n")))))
+          (insert "No monthly spending data available.\n")))))
 
 (defun bank-buddy-generate-subscriptions ()
   "Generate recurring subscriptions section."
@@ -1249,6 +1251,16 @@ This function runs in a separate process via async.el."
       (goto-char (point-min))
       (display-buffer (current-buffer)))))
 
+(defun bank-buddy-generate-report-directory (output-file latest-date)
+  "Generate a directory name for the report based on OUTPUT-FILE and LATEST-DATE."
+  (let* ((output-dir (file-name-directory output-file))
+         (base-name (file-name-base output-file))
+         (date-prefix (if latest-date
+                          (format-time-string "%Y-%m-%d" (date-to-time latest-date))
+                        (format-time-string "%Y-%m-%d")))
+         (report-dir-name (format "%s--%s" date-prefix base-name)))
+    (expand-file-name report-dir-name output-dir)))
+
 ;; --- Main Entry Point ---
 
 ;;;###autoload
@@ -1306,20 +1318,25 @@ This function runs in a separate process via async.el."
    ;; The callback function that uses file paths from the result
    (lambda (result)
      ;; Extract file paths from the result
-     (let ((csv-file (plist-get result :csv-file))
-           (output-file (plist-get result :output-file))
-           (worker-err (plist-get result :error))
-           (output-dir nil))
+     (let* ((csv-file (plist-get result :csv-file))
+            (output-file (plist-get result :output-file))
+            (worker-err (plist-get result :error))
+            (latest-date (plist-get result :date-last))
+            (report-dir (bank-buddy-generate-report-directory output-file latest-date)))
        
        (if worker-err
-           ;; Handle worker-reported error
            (progn
              (message "Bank Buddy: Background processing failed: %s" worker-err)
              (display-warning 'bank-buddy (format "Background processing failed: %s" worker-err) :error))
-
-         ;; Process success (no worker error reported)
+         
          (progn
            (bank-buddy-show-progress "Generating report..." t)
+           
+           ;; Create the report directory
+           (make-directory report-dir t)
+           
+           ;; Update output-file to be in the new directory
+           (setq output-file (expand-file-name (file-name-nondirectory output-file) report-dir))
 
            ;; Clear previous global data
            (clrhash bank-buddy-cat-tot)
@@ -1353,14 +1370,6 @@ This function runs in a separate process via async.el."
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
            
-           ;; Determine output directory for images
-           (setq output-dir
-                 (bank-buddy-ensure-directory
-                  (expand-file-name
-                   "bank-buddy-monthly-plots"
-                   (or bank-buddy-core-output-directory
-                       (file-name-directory output-file)))))
-           
            ;; Generate the report content in a temp buffer
            (with-temp-buffer
              (org-mode)
@@ -1372,11 +1381,9 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-summary-overview)
              (bank-buddy-generate-top-spending-categories)
              (bank-buddy-generate-monthly-spending)
-             ;; Add our new function here to insert the monthly categories table
              (bank-buddy-generate-monthly-categories-table)
-             ;; Add the NEW monthly breakdown plots
-             (bank-buddy-generate-monthly-category-breakdowns output-dir)
-             (bank-buddy-generate-monthly-progress-comparison)
+             (bank-buddy-generate-monthly-category-breakdowns report-dir)
+             (bank-buddy-generate-monthly-progress-comparison report-dir)
              (bank-buddy-generate-top-merchants)
              (bank-buddy-generate-subscriptions)
              (bank-buddy-generate-transaction-size-distribution)
@@ -1385,24 +1392,21 @@ This function runs in a separate process via async.el."
            
            (bank-buddy-show-progress
             (format "Report generated successfully: %s\nMonthly plots saved to: %s"
-                    output-file output-dir) t)
+                    output-file report-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
              (find-file output-file))))))))
 
 ;;;###autoload
 (defun bank-buddy-generate ()
-  "Intelligently generate a financial report based on context.
-If in a CSV buffer, use the current buffer's file.
-If in Dired, use the CSV file at point.
-Otherwise, prompt for input and output files."
+  "Intelligently generate a financial report based on context."
   (interactive)
   (let (input-file output-file)
     (cond
      ;; Case 1: In a CSV buffer
      ((and buffer-file-name (string-match-p "\\.csv$" buffer-file-name))
       (setq input-file buffer-file-name)
-      (setq output-file (concat (file-name-sans-extension buffer-file-name) ".org")))
+      (setq output-file (concat (file-name-sans-extension buffer-file-name) "_report.org")))
      
      ;; Case 2: In Dired
      ((eq major-mode #'dired-mode)
@@ -1410,7 +1414,7 @@ Otherwise, prompt for input and output files."
         (if (and file (string-match-p "\\.csv$" file))
             (progn
               (setq input-file file)
-              (setq output-file (concat (file-name-sans-extension file) ".org")))
+              (setq output-file (concat (file-name-sans-extension file) "_report.org")))
           (error "No CSV file selected in Dired"))))
      
      ;; Case 3: Neither in CSV buffer nor in Dired
@@ -1420,7 +1424,7 @@ Otherwise, prompt for input and output files."
     ;; Generate the report
     (if (and input-file output-file)
         (progn
-          (message "Generating report from %s to %s" input-file output-file)
+          (message "Generating report from %s" input-file)
           (bank-buddy-generate-report input-file output-file))
       (error "Failed to determine input and output files"))))
 
