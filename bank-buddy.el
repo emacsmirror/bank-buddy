@@ -517,7 +517,7 @@ Categories are ordered consistently based on global top spending categories."
     (insert "set grid ytics\n")
     (insert "plot for [i=3:(3+" (number-to-string (length top-categories)) "-1)] \\\n")
     (insert "     data using i:xtic(1) title columnheader(i), \\\n")
-    (insert "data using 0:2 with linespoints \\\n")
+    (insert "     data using ($0-1):2 with linespoints \\\n")
     (insert "linecolor rgb \"#000000\" linewidth 3 pointtype 7 pointsize 1.5 title \"Total\"\n")
 
     (insert "#+end_src\n\n")
