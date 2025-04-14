@@ -112,6 +112,8 @@ The recommended way to install Bank Buddy is through MELPA:
 
 #+begin_src example-preformatted
 M-x package-install RET bank-buddy RET
+(with-eval-after-load 'bank-buddy
+  (add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable))
 #+end_src
 
 *** Manual Installation [[#Manual-Installation][¶]]
@@ -130,7 +132,8 @@ M-x package-install RET bank-buddy RET
    #+begin_src example-preformatted
    (add-to-list 'load-path "/path/to/bank-buddy")
    (require 'bank-buddy)
-   (require 'bank-buddy-cat-mode)
+   (with-eval-after-load 'bank-buddy
+     (add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable))
    #+end_src
 
 *** Dependencies [[#Dependencies][¶]]

@@ -107,6 +107,8 @@ MELPA
 The recommended way to install Bank Buddy is through MELPA:
 
      M-x package-install RET bank-buddy RET
+     (with-eval-after-load 'bank-buddy
+       (add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable))
 
 Manual Installation
 ===================
@@ -117,7 +119,8 @@ Manual Installation
   2. Add the directory to your load path and require the package:
           (add-to-list 'load-path "/path/to/bank-buddy")
           (require 'bank-buddy)
-          (require 'bank-buddy-cat-mode)
+          (with-eval-after-load 'bank-buddy
+            (add-hook 'org-mode-hook 'bank-buddy-cat-maybe-enable))
 
 Dependencies
 ============
@@ -712,18 +715,18 @@ Tag Table:
 Node: Top613
 Node: Introduction1971
 Node: Installation4018
-Node: Quick Start4742
-Node: CSV Format5063
-Node: Report Generation5663
-Node: Report Sections6272
-Node: Transaction Categories9730
-Node: Subscription Detection12532
-Node: Category Management13988
-Node: Customization15330
-Node: Key Bindings17212
-Node: Comparison18163
-Node: Troubleshooting20730
-Node: Index21950
+Node: Quick Start4915
+Node: CSV Format5236
+Node: Report Generation5836
+Node: Report Sections6445
+Node: Transaction Categories9903
+Node: Subscription Detection12705
+Node: Category Management14161
+Node: Customization15503
+Node: Key Bindings17385
+Node: Comparison18336
+Node: Troubleshooting20903
+Node: Index22123
 
 End Tag Table
 
