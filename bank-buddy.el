@@ -1264,6 +1264,31 @@ This function runs in a separate process via async.el."
 ;; --- Main Entry Point ---
 
 ;;;###autoload
+(defun bank-buddy-reformat-csv-date-and-data ()
+  "Convert date from \"dd/mm/yyyy\" to \"yyyy-mm-dd\" and reformat CSV data lines in the current buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((result-lines '())
+          date desc amount balance day month year reformatted-date)
+      (while (re-search-forward "^\"\\([0-9]+\\)/\\([0-9]+\\)/\\([0-9]+\\)\",\"\\([^\"]*\\)\",\"\\(-?[0-9.]+\\)\",\"\\(-?[0-9.]+\\)\"" nil t)
+        (setq day (match-string 1))
+        (setq month (match-string 2))
+        (setq year (match-string 3))
+        (setq desc (match-string 4))
+        (setq amount (match-string 5))
+        (setq balance (match-string 6))
+        (unless (string-empty-p desc) ; skip lines with empty description
+          ;; reformat date
+          (setq reformatted-date (format "%s-%02d-%02d" year (string-to-number month) (string-to-number day)))
+          ;; remove quotes and format line
+          (push (format "%s,%s,%s,%s" reformatted-date desc (replace-regexp-in-string "^-\\(.*\\)" "\\1" amount) balance) result-lines)))
+      (erase-buffer)
+      ;; insert reformatted lines
+      (dolist (line (nreverse result-lines))
+        (insert line "\n")))))
+
+;;;###autoload
 (defun bank-buddy-generate-report (csv-file output-file)
   "Generate financial report from CSV-FILE asynchronously and save to OUTPUT-FILE."
   (interactive "fInput CSV file: \nFOutput Org file: ")
