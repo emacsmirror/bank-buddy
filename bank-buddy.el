@@ -737,10 +737,7 @@ This function runs in a separate process via async.el."
 
 (defun bank-buddy-generate-monthly-progress-comparison (output-dir)
   "Generate a plot comparing monthly spending progress."
-  (let* ((current-date (format-time-string "%Y-%m-%d"))
-         (current-month (substring current-date 0 7))
-         (current-day (substring current-date 8 10))
-         (months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
+  (let* ((months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
          (data-file (expand-file-name "monthly-progress-comparison.dat" output-dir))
          (plot-file (expand-file-name "monthly-progress-comparison.gp" output-dir))
          (image-file (expand-file-name "monthly-progress-comparison.png" output-dir)))
@@ -1265,12 +1262,12 @@ This function runs in a separate process via async.el."
 
 ;;;###autoload
 (defun bank-buddy-reformat-csv-date-and-data ()
-  "Convert date from \"dd/mm/yyyy\" to \"yyyy-mm-dd\" and reformat CSV data lines in the current buffer."
+  "Convert date from \"dd/mm/yyyy\" to \"yyyy-mm-dd\" and reformat CSV data lines."
   (interactive)
   (save-excursion
     (goto-char (point-min))
     (let ((result-lines '())
-          date desc amount balance day month year reformatted-date)
+          desc amount balance day month year reformatted-date)
       (while (re-search-forward "^\"\\([0-9]+\\)/\\([0-9]+\\)/\\([0-9]+\\)\",\"\\([^\"]*\\)\",\"\\(-?[0-9.]+\\)\",\"\\(-?[0-9.]+\\)\"" nil t)
         (setq day (match-string 1))
         (setq month (match-string 2))
