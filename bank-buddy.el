@@ -2,7 +2,7 @@
 ;;
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
 ;; Keywords: matching
 ;; URL: https://github.com/captainflasmr/bank-buddy
@@ -59,6 +59,9 @@
 (defgroup bank-buddy nil
   "Customization options for bank-buddy."
   :group 'applications)
+
+(defvar bank-buddy-monthly-transaction-counts (make-hash-table :test 'equal)
+  "Hash table storing monthly transaction counts.  Populated by async callback.")
 
 (defvar bank-buddy-unmatched-transactions-local '()
   "List of transactions that matched only the catch-all pattern.")
@@ -636,7 +639,8 @@ This function runs in a separate process via async.el."
         (daily-cumulative-totals (make-hash-table :test 'equal))
         (txn-size-dist (make-hash-table :test 'equal))
         (subs (make-hash-table :test 'equal))
-        (bank-buddy-unmatched-transactions-local '()) ; New local list for unmatched transactions
+        (bank-buddy-unmatched-transactions-local '())
+        (monthly-transaction-counts (make-hash-table :test 'equal))
         (date-first nil)
         (date-last nil)
         (error-occurred nil)
@@ -710,6 +714,10 @@ This function runs in a separate process via async.el."
                       (setq last-processed-date date) ; Update the last processed date
 
                       (when (> debit 0) ;; Only count positive debits
+                        ;; Increment monthly transaction count
+                        (puthash month 
+                                 (1+ (gethash month monthly-transaction-counts 0)) 
+                                 monthly-transaction-counts)
                         ;; Call the local categorizer, passing local hash tables
                         (bank-buddy--categorize-payment-local
                          (replace-regexp-in-string " " "-" description)
@@ -731,7 +739,8 @@ This function runs in a separate process via async.el."
           :daily-cumulative-totals daily-cumulative-totals
           :txn-size-dist txn-size-dist
           :subs subs
-          :unmatched-transactions bank-buddy-unmatched-transactions-local)))
+          :unmatched-transactions bank-buddy-unmatched-transactions-local
+          :monthly-transaction-counts monthly-transaction-counts)))
 
 ;; These functions assume the global variables have been populated by the async callback.
 
@@ -1108,6 +1117,63 @@ This function runs in a separate process via async.el."
                                            (lambda (a b) (string< (car a) (car b)))))
           (insert "No monthly spending data available.\n")))))
 
+(defun bank-buddy-generate-monthly-transaction-counts ()
+  "Generate a section showing transaction counts for each month."
+  (let ((months-list '())
+        (total-transactions 0)
+        (total-spending 0))
+    
+    (insert "\n* Monthly Transaction Counts\n\n")
+    (insert "This section shows the number of transactions processed for each month.\n\n")
+    
+    ;; Create the table
+    (insert "#+NAME: monthly-transactions\n")
+    (insert "| Month      | Transactions | Spending (£) | Avg. per Transaction (£) |\n")
+    (insert "|------------+--------------+--------------+--------------------------|\n")
+    
+    ;; Get months and sort
+    (maphash (lambda (month count)
+               (let ((amount (gethash month bank-buddy-monthly-totals 0)))
+                 (push (list month count amount) months-list)))
+             bank-buddy-monthly-transaction-counts)
+    (setq months-list (nreverse (sort months-list (lambda (a b) (string< (car a) (car b))))))
+    
+    ;; Display each month
+    (dolist (month-data months-list)
+      (let* ((month (nth 0 month-data))
+             (txn-count (nth 1 month-data))
+             (amount (nth 2 month-data))
+             (avg-per-txn (if (> txn-count 0) (/ amount txn-count) 0)))
+        (insert (format "| %s | %12d | %12.2f | %24.2f |\n"
+                        month txn-count amount avg-per-txn))
+        (setq total-transactions (+ total-transactions txn-count))
+        (setq total-spending (+ total-spending amount))))
+    
+    ;; Add visual chart
+    (insert "\n#+begin_src gnuplot :var data=monthly-transactions :file financial-report--monthly-transactions.png :execute_on_open t :results file :exports results\n")
+    (insert "set terminal png size 1000,600\n")
+    (insert "set title 'Monthly Transaction Counts and Spending'\n")
+    (insert "set xlabel 'Month'\n")
+    (insert "set ylabel 'Number of Transactions'\n")
+    (insert "set y2label 'Spending (£)'\n")
+    (insert "set ytics nomirror\n")
+    (insert "set y2tics\n")
+    (insert "set xtics rotate by -45\n")
+    (insert "set key outside right top\n")
+    (insert "set style data histogram\n")
+    (insert "set style fill solid 1.0\n")
+    (insert "set boxwidth 0.4\n")
+    (insert "set offset 0,0,0,0\n")
+    (insert "set y2range [0:*]\n")
+    (insert "set yrange [0:*]\n")
+    (insert "plot data using 2:xtic(1) with boxes axes x1y1 title 'Transactions' lc rgb '#4169E1', \\\n")
+    (insert "     data using ($0):3 with linespoints axes x1y2 title 'Spending' lw 2 pt 7 lc rgb '#FF4500'\n")
+    (insert "#+end_src\n\n")
+    
+    (insert "#+ATTR_ORG: :width 800\n")
+    (insert "#+RESULTS:\n")
+    (insert "[[file:financial-report--monthly-transactions.png]]\n\n")))
+
 (defun bank-buddy-generate-subscriptions ()
   "Generate recurring subscriptions section."
   (let ((subscriptions '())
@@ -1367,6 +1433,7 @@ This function runs in a separate process via async.el."
            (clrhash bank-buddy-txn-size-dist)
            (clrhash bank-buddy-subs)
            (clrhash bank-buddy-daily-cumulative-totals)
+           (clrhash bank-buddy-monthly-transaction-counts)
            (setq bank-buddy-unmatched-transactions '()) ; Clear previous unmatched list
            
            (setq bank-buddy-date-first nil)
@@ -1385,6 +1452,9 @@ This function runs in a separate process via async.el."
              (maphash (lambda (k v) (puthash k v bank-buddy-txn-size-dist)) (plist-get result :txn-size-dist)))
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
+           (when (hash-table-p (plist-get result :monthly-transaction-counts))
+             (maphash (lambda (k v) (puthash k v bank-buddy-monthly-transaction-counts)) 
+                      (plist-get result :monthly-transaction-counts)))
            (when (hash-table-p (plist-get result :daily-cumulative-totals))
              (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals)) 
                       (plist-get result :daily-cumulative-totals)))
@@ -1403,6 +1473,7 @@ This function runs in a separate process via async.el."
              (bank-buddy-generate-summary-overview)
              (bank-buddy-generate-top-spending-categories)
              (bank-buddy-generate-monthly-spending)
+             (bank-buddy-generate-monthly-transaction-counts)
              (bank-buddy-generate-monthly-categories-table)
              (bank-buddy-generate-monthly-category-breakdowns report-dir)
              (bank-buddy-generate-monthly-progress-comparison report-dir)

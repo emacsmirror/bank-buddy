@@ -52,6 +52,12 @@ See [[file:docs/bank-buddy.org]] for the manual!
 
 * Whats New
 
+** <2025-04-26> 0.1.2
+
+- Added monthly transaction counts
+
+This section shows the number of transactions processed for each month.
+
 ** <2025-04-12> 0.1.1
 
 Removed csv package dependency
