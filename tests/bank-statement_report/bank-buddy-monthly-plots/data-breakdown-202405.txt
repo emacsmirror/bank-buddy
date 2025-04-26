@@ -1,0 +1,18 @@
+# Category Amount Percentage
+"Other (o)" 125.44 17.6
+"Personal (prs)" 200.00 28.1
+"Housing (hse)" 0.00 0.0
+"Food (fod)" 105.75 14.9
+"Utilities (utl)" 65.50 9.2
+"Amazon (amz)" 32.99 4.6
+"PayPal (pay)" 40.00 5.6
+"Cash Withdrawals (atm)" 0.00 0.0
+"Shopping (shp)" 0.00 0.0
+"Web Services (web)" 25.00 3.5
+"Transport (trn)" 0.00 0.0
+"Streaming (str)" 13.99 2.0
+"Dental (dnt)" 60.00 8.4
+"Taxi (txi)" 18.25 2.6
+"Pet Expenses (pet)" 0.00 0.0
+"Betting (bet)" 25.00 3.5
+"Savings (sav)" 0.00 0.0
