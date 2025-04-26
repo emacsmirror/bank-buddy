@@ -1,6 +1,6 @@
 #+title: Financial Report (Bank Buddy)
 #+subtitle: Data from bank-statement.csv
-#+date: 2025-04-26 08:47:30
+#+date: 2025-04-26 08:59:13
 #+options: toc:1 num:nil
 #+startup: inlineimages showall
 
@@ -215,7 +215,7 @@ Note: Categories in all plots are ordered consistently based on the top-spending
 This plot compares the cumulative spending progress for each month:
 
 #+ATTR_ORG: :width 800
-[[file:/home/jdyer/source/repos/bank-buddy/tests/2024-06-30--bank-statement_report/monthly-progress-comparison.png]]
+[[file:monthly-progress-comparison.png]]
 
 The plot shows how spending in the current month compares to previous months at the same point in time.
 

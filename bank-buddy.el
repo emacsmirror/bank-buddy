@@ -786,7 +786,7 @@ This function runs in a separate process via async.el."
     ;; Insert the plot into the report
     (insert "\n** Monthly Spending Progress Comparison\n\n")
     (insert "This plot compares the cumulative spending progress for each month:\n\n")
-    (insert (format "#+ATTR_ORG: :width 800\n[[file:%s]]\n\n" image-file))
+    (insert (format "#+ATTR_ORG: :width 800\n[[file:%s]]\n\n"  (file-relative-name image-file output-dir)))
     (insert "The plot shows how spending in the current month compares to previous months at the same point in time.\n")))
 
 (defun bank-buddy-generate-summary-overview ()
