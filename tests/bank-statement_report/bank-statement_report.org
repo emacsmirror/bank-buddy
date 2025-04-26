@@ -68,14 +68,14 @@ Each bar shows spending by category. The 3-letter codes represent categories,
 with consistent ordering by overall spending (highest to lowest) across all months.
 The length of each segment is proportional to its share of that month's spending.
 
-#+begin_verse
+#+begin_src
 2024-06 *£ 746* /o2____________________/prs2____________________/utl1___/amz1__/atm1_______/trn0/
 2024-05 *£ 712* /o1_____________/prs2____________________/fod1________/utl1___/pay0/dnt1__/
 2024-04 *£ 809* /o2___________________________/prs2____________________/utl1___/amz1_____/shp1____/pet0_/
 2024-03 *£1292* /o2________________/hse8________________________________________________________________________________________/fod1_______/utl1___/pay0_/atm0_/
 2024-02 *£ 610* /o2________________/prs2____________________/amz1___/shp1____/
 2024-01 *£ 354* /fod1_______/utl1___/amz0_/pay1_____/
-#+end_verse
+#+end_src
 
 * Monthly Transaction Counts
 
