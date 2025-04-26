@@ -1,4 +1,4 @@
-set terminal png size 800,600
+set terminal png size 800,600 enhanced font 'Verdana,10'
 set output '/home/jdyer/source/repos/bank-buddy/tests/2024-06-30--bank-statement_report/monthly-progress-comparison.png'
 set title 'Monthly Spending Progress Comparison'
 set xlabel 'Day of Month'

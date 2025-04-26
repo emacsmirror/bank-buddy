@@ -1,6 +1,6 @@
 #+title: Financial Report (Bank Buddy)
 #+subtitle: Data from bank-statement.csv
-#+date: 2025-04-26 09:11:04
+#+date: 2025-04-26 13:59:45
 #+options: toc:1 num:nil
 #+startup: inlineimages showall
 
@@ -37,24 +37,14 @@ Analysis of spending across 6 months, showing category breakdown:
 | /bet/ Betting          |       45.00 |       1.0% |        7.50 |      90.00 |
 | /sav/ Savings          |       25.00 |       0.6% |        4.17 |      50.00 |
 
-#+begin_src gnuplot :var data=top-spending-categories :file financial-report--top-spending-categories.png :execute_on_open t :results file :exports results
-set terminal png size 800,600
-set style data histogram
-set style fill solid
-set boxwidth 0.8
-set xtics rotate by -45
-set ylabel "Amount"
-set title "Top Spending Categories"
-plot data using 4:xtic(1) with boxes title "Amount"
-#+end_src
-
 #+ATTR_ORG: :width 600
-#+RESULTS:
 [[file:financial-report--top-spending-categories.png]]
-
 
 Monthly and yearly averages are calculated based on the total duration of the data.
 Data spans approximately 6 months.
+
+Generated from gnuplot script: [[file:top-spending-categories.gp]]
+Data file: [[file:top-spending-categories.dat]]
 
 * Monthly Spending Patterns
 
@@ -91,30 +81,11 @@ This section shows the number of transactions processed for each month.
 | 2024-02 |           12 |       609.94 |                    50.83 |
 | 2024-01 |           10 |       354.43 |                    35.44 |
 
-#+begin_src gnuplot :var data=monthly-transactions :file financial-report--monthly-transactions.png :execute_on_open t :results file :exports results
-set terminal png size 1000,600
-set title 'Monthly Transaction Counts and Spending'
-set xlabel 'Month'
-set ylabel 'Number of Transactions'
-set y2label 'Spending (£)'
-set ytics nomirror
-set y2tics
-set xtics rotate by -45
-set key outside right top
-set style data histogram
-set style fill solid 1.0
-set boxwidth 0.4
-set offset 0,0,0,0
-set y2range [0:*]
-set yrange [0:*]
-plot data using 2:xtic(1) with boxes axes x1y1 title 'Transactions' lc rgb '#4169E1', \
-     data using ($0):3 with linespoints axes x1y2 title 'Spending' lw 2 pt 7 lc rgb '#FF4500'
-#+end_src
-
 #+ATTR_ORG: :width 800
-#+RESULTS:
 [[file:financial-report--monthly-transactions.png]]
 
+Generated from gnuplot script: [[file:monthly-transactions.gp]]
+Data file: [[file:monthly-transactions.dat]]
 
 ** Monthly Spending by Category
 
@@ -133,58 +104,22 @@ This table shows spending breakdown for each month by top categories:
 
 The following visualization shows monthly spending with each bar stacked by category:
 
-#+name: reverse-data
-#+begin_src emacs-lisp :var data=monthly-categories-table
-  (cons (car data) (reverse (cdr data)))
-#+end_src
-
-#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-stacked.png :execute_on_open t :results file :exports results
-set terminal png size 1200,600 enhanced font 'Verdana,10'
-set style data histograms
-set style histogram rowstacked
-set boxwidth 0.75 relative
-set style fill solid 1.0 border -1
-set title 'Monthly Spending by Category'
-set xlabel 'Month'
-set ylabel 'Amount (£)'
-set xtics rotate by -45
-set key outside right top vertical
-set auto x
-set yrange [0:*]
-set grid ytics
-plot for [i=3:(3+17-1)] \
-     data using i:xtic(1) title columnheader(i), \
-     data using ($0-1):2 with linespoints \
-linecolor rgb "#000000" linewidth 3 pointtype 7 pointsize 1.5 title "Total"
-#+end_src
-
 #+ATTR_ORG: :width 800
-#+RESULTS:
 [[file:financial-report--monthly-spending-stacked.png]]
+
+Generated from gnuplot script: [[file:monthly-categories-stacked.gp]]
+Data file: [[file:monthly-categories-stacked.dat]]
+
 
 *** Monthly Spending with Individual Categories
 
 This plot shows each category separately across months for detailed comparison:
 
-#+begin_src gnuplot :var data=reverse-data :file financial-report--monthly-spending-categories.png :execute_on_open t :results file :exports results
-set terminal png size 1200,600 enhanced font 'Verdana,10'
-set title 'Monthly Spending by Category'
-set xlabel 'Month'
-set ylabel 'Amount (£)'
-set style data linespoints
-set key outside right top vertical
-set xtics rotate by -45
-set grid
-set auto x
-# Plot each category as a separate line
-plot for [i=3:(3+17-1)] \
-     data using 0:i:xtic(1) title columnheader(i) with linespoints pointtype i-2 lw 2
-#+end_src
-
 #+ATTR_ORG: :width 800
-#+RESULTS:
 [[file:financial-report--monthly-spending-categories.png]]
 
+Generated from gnuplot script: [[file:monthly-categories-lines.gp]]
+Data file: [[file:monthly-categories-lines.dat]]
 ** Monthly Category Breakdowns
 
 Generated 6 monthly breakdown files in: /home/jdyer/source/repos/bank-buddy/tests/2024-06-30--bank-statement_report
@@ -216,6 +151,9 @@ This plot compares the cumulative spending progress for each month:
 [[file:monthly-progress-comparison.png]]
 
 The plot shows how spending in the current month compares to previous months at the same point in time.
+
+Generated from gnuplot script: [[file:monthly-progress-comparison.gp]]
+Data file: [[file:monthly-progress-comparison.dat]]
 
 * Top Merchants
 
@@ -249,22 +187,12 @@ Analysis of merchant spending across 6 months:
 | UBER-RIDE                   |       46.50 |       1.0% |        7.75 |      93.00 |
 | SKY-SUBSCRIPTION            |       45.99 |       1.0% |        7.67 |      91.98 |
 
-#+begin_src gnuplot :var data=top-merchants :file financial-report--top-merchants.png :execute_on_open t :results file :exports results
-set terminal png size 800,600
-set style data histogram
-set style fill solid
-set boxwidth 0.8
-set xtics rotate by -45
-set ylabel "Amount"
-set title "Top Spending Categories"
-plot data using 4:xtic(1) with boxes title "Amount"
-#+end_src
-
 #+ATTR_ORG: :width 600
-#+RESULTS:
 [[file:financial-report--top-merchants.png]]
 
 Monthly and yearly averages are calculated based on the total duration of the data.
+Generated from gnuplot script: [[file:top-merchants.gp]]
+Data file: [[file:top-merchants.dat]]
 
 * Recurring Subscriptions (Detected)
 
