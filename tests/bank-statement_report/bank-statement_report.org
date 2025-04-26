@@ -1,6 +1,6 @@
 #+title: Financial Report (Bank Buddy)
 #+subtitle: Data from bank-statement.csv
-#+date: 2025-04-26 08:59:13
+#+date: 2025-04-26 09:11:04
 #+options: toc:1 num:nil
 #+startup: inlineimages showall
 
@@ -76,8 +76,6 @@ The length of each segment is proportional to its share of that month's spending
 2024-02 *£ 610* /o2________________/prs2____________________/amz1___/shp1____/
 2024-01 *£ 354* /fod1_______/utl1___/amz0_/pay1_____/
 #+end_verse
-
-No monthly spending data available.
 
 * Monthly Transaction Counts
 

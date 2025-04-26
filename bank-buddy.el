@@ -1110,12 +1110,12 @@ This function runs in a separate process via async.el."
                      (bar-text (bank-buddy-generate-category-bar
                                 month global-category-order bar-width)))
                 (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
-          (insert "#+end_verse\n\n")
+          (insert "#+end_verse\n")
           
           ;; Create category breakdown tables for each month
           (setq all-monthly-cat-data (sort all-monthly-cat-data
-                                           (lambda (a b) (string< (car a) (car b)))))
-          (insert "No monthly spending data available.\n")))))
+                                           (lambda (a b) (string< (car a) (car b))))))
+          (insert "No monthly spending data available.\n"))))
 
 (defun bank-buddy-generate-monthly-transaction-counts ()
   "Generate a section showing transaction counts for each month."
