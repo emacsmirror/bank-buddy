@@ -12,7 +12,7 @@
 
 Bank Buddy is an Emacs package that provides financial analysis and reporting capabilities for your bank statements. It processes CSV bank statement data, categorizes transactions using customizable patterns, and generates detailed reports in Org-mode format.
 
-It does not depend on any external account system, and the analysis is handled by =elisp=. The only external tool that may be required is =gnuplot= to visualize the generated org tables containing the financial breakdown.
+It does not depend on any external account system, and the analysis is handled by =elisp=. The only external tool that may be required is =gnuplot= to visualize the generated data.
 
 Here is an example of the type of report that is generated (obviously using test data :))
 
@@ -32,7 +32,7 @@ See [[file:docs/bank-buddy.org]] for the manual!
   - Monthly spending patterns with visual representation
   - Recurring subscription detection
 - *Interactive Category Management*: Edit and refine categorization patterns directly from reports
-- *Data Visualizations*: Generates charts and graphs using org-plot
+- *Data Visualizations*: Generates charts and graphs using external gnuplot scripts
 - *No Reliance on External Accounting System* - Analysis is all Emacs built-in
 - *Asynchronous Processing*: Efficiently handles large bank statements without blocking Emacs
 
@@ -51,6 +51,10 @@ See [[file:docs/bank-buddy.org]] for the manual!
 [[file:img/financial-report--monthly-spending-stacked.png]]
 
 * Whats New
+
+** <2025-04-26> 0.2.0
+
+*Major update*: Removed all Org Babel blocks and now generate =gnuplot= data files and images through an external call-process. This means that the user still has the flexibility to modify a =gnuplot= output, but instead of modifying an embedded Babel gnuplot source block and regenerating the data, the files on disk can be modified. As a result, no Babel dependencies need to be installed, and there is no need to confirm Babel block evaluation on each report load.
 
 ** <2025-04-26> 0.1.2
 
@@ -79,7 +83,7 @@ Refactor code and improve customization options
 
 - Emacs 26.1 or later
 - async.el
-- gnuplot
+- gnuplot (system installation)
 
 *** MELPA
 
@@ -126,37 +130,24 @@ OR
 
 * Generate gnuplots
 
-You will need to enable gnuplot from within Emacs:
+Since version 0.2.0, Bank Buddy generates external gnuplot scripts that are executed via =call-process=. You need to have gnuplot installed on your system.
 
-#+begin_src elisp
-(require 'ob-gnuplot)
+To install gnuplot:
+- Linux: =sudo apt install gnuplot= (or equivalent for your distribution)
+- macOS: =brew install gnuplot=
+- Windows: Download from http://www.gnuplot.info/
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((gnuplot . t)))
-#+end_src
-
-* Auto-regenerate gnuplots
-
-If you don't want to evalulate the org babel gnuplot scripts an every org load then you can automate it with the following:
-
-#+begin_src elisp
-(defun my-org-babel-execute-on-open ()
-  (when (eq major-mode 'org-mode)
-    (org-babel-map-executables nil
-      (when (org-babel-get-src-block-info)
-        (let ((execute-on-open (cdr (assq :execute_on_open (nth 2 (org-babel-get-src-block-info))))))
-          (when execute-on-open
-            (org-babel-execute-src-block)))))))
-
-(add-hook 'org-mode-hook 'my-org-babel-execute-on-open)
-#+end_src
+The generated reports will include links to both the gnuplot script files (.gp) and data files (.dat) for each visualization. This allows for:
+- Easy customization of plots by editing the gnuplot scripts
+- Regeneration of plots without reprocessing the CSV data
+- Better control over visualization settings
 
 * Usage Guide
 
 ** Understanding CSV Format
 
 Bank Buddy expects CSV files with at least the following columns:
+
 - Transaction date
 - Transaction description
 - Debit amount
@@ -272,19 +263,23 @@ A typical Bank Buddy report includes:
 *** Top Spending Categories
 - Ranked list of spending categories
 - Total amount, percentage, and monthly/yearly averages
+- Links to generated gnuplot scripts and data files
 
 *** Monthly Spending Patterns
 - Month-by-month spending visualization
 - Category breakdown for each month
 - Highest and lowest spending months
+- Links to visualization files (*.gp, *.dat)
 
 *** Monthly Category Breakdowns
 - Detailed charts for each month showing spending by category
 - Consistent color coding across months for easy comparison
+- Links to individual gnuplot scripts for customization
 
 *** Top Merchants
 - Your highest-spending merchants
 - Total amount, percentage, and monthly/yearly averages
+- Links to generated visualization files
 
 *** Recurring Subscriptions
 - Detected recurring payments
@@ -372,10 +367,10 @@ This opens a buffer showing transactions that weren't matched by specific patter
 - *Save Category Definitions*
    When prompted, choose to save your category definitions to your init file.
 
-- *View Monthly Plots*
-   #+begin_src 
-   M-x bank-buddy-view-monthly-plots
-   #+end_src
+- *View and Customize Plots*
+   - Click on the links to gnuplot scripts (.gp) in the report
+   - Edit the scripts to customize visualization
+   - Run them with =gnuplot script.gp= to regenerate plots
 
 * Customization
 
@@ -441,16 +436,16 @@ Define subscription patterns for better detection of recurring payments:
 
 Bank Buddy reports are generated as Org-mode files, making them compatible with other Org-based tools:
 
-- Use =org-babel= to perform additional analysis
 - Export to HTML, PDF, or other formats with Org export functions
 - Use =org-capture= to add notes to specific transactions or categories
 
 ** Custom Visualization
 
-Bank Buddy generates visualizations using =org-plot=. You can customize these by:
+Bank Buddy generates visualizations using external gnuplot scripts. You can customize these by:
 
-1. Modifying the plotting parameters in the generated report
-2. Adding additional plots using =gnuplot= code blocks
+1. Editing the generated .gp files in the report directory
+2. Creating your own gnuplot scripts based on the generated .dat files
+3. Running the scripts manually with =gnuplot filename.gp=
 
 ** Keyboard Shortcuts
 
@@ -464,7 +459,7 @@ When viewing a report with =bank-buddy-cat-mode= enabled:
 - *CSV Format*: Bank Buddy expects a CSV with date, description, and amount columns
 - *Performance*: For very large CSV files (10K+ rows), the async processing helps but may still take time
 - *Categorization*: Start with broad patterns and refine as needed
-- *Visualization*: For best results, install Gnuplot for chart generation
+- *Visualization*: Ensure gnuplot is installed on your system for chart generation
 - *Saving Patterns*: Always save your category patterns to persist between sessions
 
 * Comparison with Other Financial Packages
@@ -557,7 +552,7 @@ Some users analyze financial CSV data using built-in Emacs packages like csv-mod
 
 ** DOING Data Visualization
 
-Add interactive charts and graphs using Org-babel
+Improve external gnuplot integration
 
 ** DOING Better gnuplot autogeneration of plots
 
@@ -616,6 +611,7 @@ Bank Buddy processes CSV files asynchronously to avoid blocking Emacs. However, 
 - *Unmatched Transactions*: Review and add patterns for your common merchants
 - *Duplicate Categories*: Check for overlapping regex patterns
 - *Date Format Issues*: Ensure dates are in YYYY-MM-DD format for best results
+- *Gnuplot Not Found*: Ensure gnuplot is installed and available in your PATH
 
 * Contributing
 

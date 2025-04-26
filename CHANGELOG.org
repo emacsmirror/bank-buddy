@@ -11,6 +11,10 @@ project's main git repository: [[https://github.com/captainflasmr/bank-buddy]]
 
 * Versions
 
+** <2025-04-26> 0.2.0
+
+Removed all Babel blocks and now generate =gnuplot= data files and images through an external call-process. This means that the user still has the flexibility to modify a =gnuplot= output, but instead of modifying an embedded Babel gnuplot source block and regenerating the data, the files on disk can be modified. As a result, no Babel dependencies need to be installed, and there is no need to confirm a Babel block evaluation on each report load.
+
 ** <2025-04-26> 0.1.2
 
 - Added monthly transaction counts
