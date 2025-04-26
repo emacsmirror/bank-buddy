@@ -1099,7 +1099,7 @@ This function runs in a separate process via async.el."
           (insert "Each bar shows spending by category. The 3-letter codes represent categories,\n")
           (insert "with consistent ordering by overall spending (highest to lowest) across all months.\n")
           (insert "The length of each segment is proportional to its share of that month's spending.\n\n")
-          (insert "#+begin_verse\n")
+          (insert "#+begin_src\n")
           ;; Sort the list representation for output
           (setq months-list (sort months-list (lambda (a b) (string< (car b) (car a)))))
           
@@ -1110,7 +1110,7 @@ This function runs in a separate process via async.el."
                      (bar-text (bank-buddy-generate-category-bar
                                 month global-category-order bar-width)))
                 (insert (format "%s *£%4.0f* %s\n" month amount bar-text)))))
-          (insert "#+end_verse\n")
+          (insert "#+end_src\n")
           
           ;; Create category breakdown tables for each month
           (setq all-monthly-cat-data (sort all-monthly-cat-data
