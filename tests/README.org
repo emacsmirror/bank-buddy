@@ -1,6 +1,40 @@
-* Bank Buddy Testing Framework
+#+title: Bank Buddy: Testing
+#+author: James Dyer
+#+email: captainflasmr@gmail.com
+#+language: en
+#+options: ':t toc:nil author:nil email:nil num:nil title:nil
+#+todo: TODO DOING | DONE
+#+startup: showall
+
+* Bank Buddy Testing Process/Strategy
 
 This document describes how to use the test framework for the Bank Buddy Emacs package. The test suite ensures that Bank Buddy correctly parses bank statement CSV files, accurately categorizes transactions, and produces reports as expected.
+
+** Batch-byte-compile
+
+#+begin_src bash
+#!/bin/bash
+
+# List of elisp files to compile
+elisp_files=(
+    "bank-buddy-cat-mode.el"
+    "bank-buddy-core.el"
+    "bank-buddy.el"
+)
+
+# Directory above current one
+elisp_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+for el in "${elisp_files[@]}"; do
+  emacs -Q --batch \
+    --eval "(progn
+            (add-to-list 'load-path \"$elisp_dir\")
+            (add-to-list 'load-path \"/home/jdyer/.emacs.d/elpa/async-20250325.509\"))" \
+    -f batch-byte-compile "$elisp_dir/$el"
+done
+#+end_src
+
+#+RESULTS:
 
 ** Run bank-buddy with different Emacs versions
 

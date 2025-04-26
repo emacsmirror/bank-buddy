@@ -8,7 +8,7 @@
 @c %**end of header
 
 @copying
-Copyright @copyright{} 2025 Your Name
+Copyright @copyright{} 2025 James Dyer
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -26,7 +26,7 @@ Documentation License''.
 @titlepage
 @title Bank Buddy User Manual
 @subtitle Enhanced financial analysis for Emacs
-@author Your Name
+@author James Dyer
 @page
 @vskip 0pt plus 1filll
 @insertcopying
@@ -49,6 +49,7 @@ Documentation License''.
 * Transaction Categories::      Customizing and managing categories
 * Subscription Detection::      How recurring payments are identified
 * Category Management::         Using bank-buddy-cat-mode
+* Customizing Visualizations::  Working with gnuplot files
 * Customization::               Customizing Bank Buddy
 * Key Bindings::                Keyboard shortcuts
 * Comparison::                  Comparison with other financial packages
@@ -68,7 +69,7 @@ Bank Buddy is an Emacs package that provides comprehensive financial analysis an
 @item @strong{Smart Transaction Categorization:} Auto-categorizes transactions based on customizable regex patterns
 @item @strong{Comprehensive Financial Reports:} Generates detailed reports in Org-mode with various analysis sections
 @item @strong{Interactive Category Management:} Edit and refine categorization patterns directly from reports
-@item @strong{Data Visualizations:} Generates charts and graphs using org-plot
+@item @strong{Data Visualizations:} Generates charts and graphs using external gnuplot scripts
 @item @strong{Subscription Detection:} Automatically identifies recurring payments and estimates monthly costs
 @item @strong{CSV-focused Analysis:} Designed specifically for bank statement CSV files
 @end itemize
@@ -83,6 +84,7 @@ Bank Buddy was developed to solve specific pain points in analyzing personal ban
 @item @strong{Real Bank Statement Analysis:} Designed to work directly with actual bank statement CSV exports, not idealized financial data.
 @item @strong{Low Maintenance:} No need to manually enter transactions or maintain a complex financial system - just periodically analyze your bank statements.
 @item @strong{Emacs Native:} Built entirely within the Emacs ecosystem, leveraging Org-mode for rich, interactive reports.
+@item @strong{Flexible Visualization:} Uses external gnuplot scripts for easy customization of charts and graphs.
 @end enumerate
 
 @node Installation
@@ -119,9 +121,19 @@ git clone https://github.com/captainflasmr/bank-buddy.git
 
 @itemize @bullet
 @item Emacs 26.1 or later
-@item csv.el
 @item async.el
-@item org-mode (for reports and plotting)
+@item org-mode (for reports)
+@item gnuplot (system installation for visualizations)
+@end itemize
+
+@heading Installing Gnuplot
+
+Bank Buddy uses gnuplot for creating visualizations. You need to have gnuplot installed on your system:
+
+@itemize @bullet
+@item Linux: @code{sudo apt install gnuplot} (or equivalent for your distribution)
+@item macOS: @code{brew install gnuplot}
+@item Windows: Download from http://www.gnuplot.info/
 @end itemize
 
 @node Quick Start
@@ -134,6 +146,8 @@ git clone https://github.com/captainflasmr/bank-buddy.git
 @item Choose where to save the Org-mode report
 @item Open the generated report
 @end enumerate
+
+Note: Bank Buddy will create external gnuplot script files (.gp) and data files (.dat) alongside your report. These can be edited for customization.
 
 @node CSV Format
 @chapter CSV Format
@@ -170,6 +184,19 @@ M-x bank-buddy-generate-report
 You'll be prompted to select an input CSV file and specify the output Org file.
 
 The package processes the data asynchronously, so Emacs remains responsive even with large CSV files. When processing is complete, you'll be asked if you want to open the generated report.
+
+@heading Generated Files
+
+Bank Buddy creates several files during report generation:
+
+@itemize @bullet
+@item The main .org report file
+@item Gnuplot script files (.gp) for each visualization
+@item Data files (.dat) containing the raw data for plots
+@item PNG image files for the generated charts
+@end itemize
+
+All these files are preserved for later customization or regeneration.
 
 @heading Command Options
 
@@ -210,6 +237,12 @@ Lists the highest spending categories with percentages and averages.
    - Monthly avg: £291.83, Yearly avg: £3,502.00
 3. /utl/ *Utilities:* £432.25 (10.2%)
    - Monthly avg: £144.08, Yearly avg: £1,729.00
+
+#+ATTR_ORG: :width 600
+[[file:financial-report--top-spending-categories.png]]
+
+Generated from gnuplot script: [[file:top-spending-categories.gp]]
+Data file: [[file:top-spending-categories.dat]]
 @end example
 
 @heading Monthly Spending Patterns
@@ -234,6 +267,28 @@ The length of each segment is proportional to its share of that month's spending
 #+end_verse
 @end example
 
+@heading Monthly Spending Visualization
+
+Visual representations of monthly spending patterns.
+
+@example
+*** Monthly Spending Visualization (Stacked Categories)
+
+#+ATTR_ORG: :width 800
+[[file:financial-report--monthly-spending-stacked.png]]
+
+Generated from gnuplot script: [[file:monthly-categories-stacked.gp]]
+Data file: [[file:monthly-categories-stacked.dat]]
+
+*** Monthly Spending with Individual Categories
+
+#+ATTR_ORG: :width 800
+[[file:financial-report--monthly-spending-categories.png]]
+
+Generated from gnuplot script: [[file:monthly-categories-lines.gp]]
+Data file: [[file:monthly-categories-lines.dat]]
+@end example
+
 @heading Top Merchants
 
 Lists merchants where you spend the most money.
@@ -249,6 +304,12 @@ Lists merchants where you spend the most money.
    - Monthly avg: £400.00, Yearly avg: £4,800.00
 2. *SAINSBURYS:* £345.67 (8.2%)
    - Monthly avg: £115.22, Yearly avg: £1,382.68
+
+#+ATTR_ORG: :width 600
+[[file:financial-report--top-merchants.png]]
+
+Generated from gnuplot script: [[file:top-merchants.gp]]
+Data file: [[file:top-merchants.dat]]
 @end example
 
 @heading Recurring Subscriptions
@@ -298,7 +359,7 @@ JOHN-HARDWARE-STORE
 
 @heading Data Visualizations
 
-Charts and graphs of your financial data using org-plot.
+Charts and graphs of your financial data using external gnuplot scripts.
 
 @node Transaction Categories
 @chapter Transaction Categories
@@ -462,6 +523,62 @@ M-x bank-buddy-view-unmatched-transactions
 
 When adding a new category pattern, you'll be asked if you want to save the updated definitions to your init file.
 
+@node Customizing Visualizations
+@chapter Customizing Visualizations
+
+Since version 0.2.0, Bank Buddy generates external gnuplot scripts rather than using Org Babel blocks. This provides more flexibility for customizing visualizations.
+
+@heading Understanding Generated Files
+
+Each visualization consists of:
+
+@itemize @bullet
+@item A gnuplot script file (.gp) - Contains the plotting instructions
+@item A data file (.dat) - Contains the raw data for the plot
+@item The resulting image file (.png) - The generated visualization
+@end itemize
+
+@heading Customizing Plots
+
+To customize a plot:
+
+@enumerate
+@item Open the .gp file linked in the report
+@item Edit the gnuplot script using standard gnuplot syntax
+@item Regenerate the plot using: @code{gnuplot filename.gp}
+@item The report will automatically show the updated image
+@end enumerate
+
+@heading Common Customizations
+
+@example
+# Change colors
+set style line 1 lc rgb '#0072BD'  # Change bar color
+
+# Adjust text size
+set terminal png size 1000,800 font 'Verdana,12'
+
+# Change plot style
+set style data linespoints    # Instead of bars
+set style fill pattern       # Use patterns instead of solid fill
+
+# Adjust axis labels
+set ylabel 'Spending (GBP)'  # Change currency symbol
+set xtics rotate by -60      # Rotate labels more
+
+# Add a grid
+set grid ytics
+@end example
+
+@heading Regenerating All Plots
+
+If you want to regenerate all plots after making global changes:
+
+@example
+cd report-directory
+for f in *.gp; do gnuplot "$f"; done
+@end example
+
 @node Customization
 @chapter Customization
 
@@ -597,6 +714,17 @@ Bank Buddy processes CSV files asynchronously to avoid blocking Emacs. However, 
 @item Consider filtering or pre-processing very large CSV files
 @end itemize
 
+@heading Visualization Issues
+
+If plots are not generating correctly:
+
+@itemize @bullet
+@item Ensure gnuplot is installed and available in your PATH
+@item Check that the .gp and .dat files were created correctly
+@item Look for error messages when running gnuplot manually
+@item Verify that the data file contains the expected format
+@end itemize
+
 @heading Common Issues
 
 @table @asis
@@ -608,6 +736,8 @@ Check for overlapping regex patterns in your category definitions
 Ensure dates are in YYYY-MM-DD format for best results
 @item Category Mistakes
 If transactions are being assigned to the wrong categories, review your regex patterns, particularly those that might be too broad
+@item Plot Customization Problems
+If edits to gnuplot scripts aren't reflected, ensure you're editing the right file and running gnuplot to regenerate
 @end table
 
 @node Index

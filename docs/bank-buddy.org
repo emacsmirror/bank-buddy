@@ -7,7 +7,7 @@ Next: [[#Introduction][Introduction]]   [[[#Index][Index]]]
 :CUSTOM_ID: Bank-Buddy
 :CLASS: top
 :END:
-Copyright © 2025 Your Name
+Copyright © 2025 James Dyer
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -25,6 +25,7 @@ Documentation License”.
 - [[#Transaction-Categories][Transaction Categories]]
 - [[#Subscription-Detection][Subscription Detection]]
 - [[#Category-Management][Category Management]]
+- [[#Customizing-Visualizations][Customizing Visualizations]]
 - [[#Customization][Customization]]
 - [[#Key-Bindings][Key Bindings]]
 - [[#Comparison][Comparison]]
@@ -62,7 +63,8 @@ format.
   Org-mode with various analysis sections
 - *Interactive Category Management:* Edit and refine categorization
   patterns directly from reports
-- *Data Visualizations:* Generates charts and graphs using org-plot
+- *Data Visualizations:* Generates charts and graphs using external
+  gnuplot scripts
 - *Subscription Detection:* Automatically identifies recurring payments
   and estimates monthly costs
 - *CSV-focused Analysis:* Designed specifically for bank statement CSV
@@ -89,6 +91,8 @@ personal bank statements:
    statements.
 5. *Emacs Native:* Built entirely within the Emacs ecosystem, leveraging
    Org-mode for rich, interactive reports.
+6. *Flexible Visualization:* Uses external gnuplot scripts for easy
+   customization of charts and graphs.
 
 --------------
 
@@ -142,9 +146,22 @@ M-x package-install RET bank-buddy RET
 :CLASS: heading
 :END:
 - Emacs 26.1 or later
-- csv.el
 - async.el
-- org-mode (for reports and plotting)
+- org-mode (for reports)
+- gnuplot (system installation for visualizations)
+
+*** Installing Gnuplot [[#Installing-Gnuplot][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Installing-Gnuplot
+:CLASS: heading
+:END:
+Bank Buddy uses gnuplot for creating visualizations. You need to have
+gnuplot installed on your system:
+
+- Linux: =sudo apt install gnuplot= (or equivalent for your
+  distribution)
+- macOS: =brew install gnuplot=
+- Windows: Download from http://www.gnuplot.info/
 
 --------------
 
@@ -164,6 +181,10 @@ Next: [[#CSV-Format][CSV Format]], Previous:
 3. Select your CSV file
 4. Choose where to save the Org-mode report
 5. Open the generated report
+
+Note: Bank Buddy will create external gnuplot script files (.gp) and
+data files (.dat) alongside your report. These can be edited for
+customization.
 
 --------------
 
@@ -220,6 +241,20 @@ Org file.
 The package processes the data asynchronously, so Emacs remains
 responsive even with large CSV files. When processing is complete,
 you'll be asked if you want to open the generated report.
+
+*** Generated Files [[#Generated-Files][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Generated-Files
+:CLASS: heading
+:END:
+Bank Buddy creates several files during report generation:
+
+- The main .org report file
+- Gnuplot script files (.gp) for each visualization
+- Data files (.dat) containing the raw data for plots
+- PNG image files for the generated charts
+
+All these files are preserved for later customization or regeneration.
 
 *** Command Options [[#Command-Options][¶]]
 :PROPERTIES:
@@ -278,6 +313,12 @@ Lists the highest spending categories with percentages and averages.
    - Monthly avg: £291.83, Yearly avg: £3,502.00
 3. /utl/ *Utilities:* £432.25 (10.2%)
    - Monthly avg: £144.08, Yearly avg: £1,729.00
+
+,#+ATTR_ORG: :width 600
+[[file:financial-report--top-spending-categories.png]]
+
+Generated from gnuplot script: [[file:top-spending-categories.gp]]
+Data file: [[file:top-spending-categories.dat]]
 #+end_src
 
 *** Monthly Spending Patterns [[#Monthly-Spending-Patterns][¶]]
@@ -305,6 +346,31 @@ The length of each segment is proportional to its share of that month's spending
 ,#+end_verse
 #+end_src
 
+*** Monthly Spending Visualization [[#Monthly-Spending-Visualization][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Monthly-Spending-Visualization
+:CLASS: heading
+:END:
+Visual representations of monthly spending patterns.
+
+#+begin_src example-preformatted
+,*** Monthly Spending Visualization (Stacked Categories)
+
+,#+ATTR_ORG: :width 800
+[[file:financial-report--monthly-spending-stacked.png]]
+
+Generated from gnuplot script: [[file:monthly-categories-stacked.gp]]
+Data file: [[file:monthly-categories-stacked.dat]]
+
+,*** Monthly Spending with Individual Categories
+
+,#+ATTR_ORG: :width 800
+[[file:financial-report--monthly-spending-categories.png]]
+
+Generated from gnuplot script: [[file:monthly-categories-lines.gp]]
+Data file: [[file:monthly-categories-lines.dat]]
+#+end_src
+
 *** Top Merchants [[#Top-Merchants][¶]]
 :PROPERTIES:
 :CUSTOM_ID: Top-Merchants
@@ -323,6 +389,12 @@ Lists merchants where you spend the most money.
    - Monthly avg: £400.00, Yearly avg: £4,800.00
 2. *SAINSBURYS:* £345.67 (8.2%)
    - Monthly avg: £115.22, Yearly avg: £1,382.68
+
+,#+ATTR_ORG: :width 600
+[[file:financial-report--top-merchants.png]]
+
+Generated from gnuplot script: [[file:top-merchants.gp]]
+Data file: [[file:top-merchants.dat]]
 #+end_src
 
 *** Recurring Subscriptions [[#Recurring-Subscriptions][¶]]
@@ -384,7 +456,7 @@ JOHN-HARDWARE-STORE
 :CUSTOM_ID: Data-Visualizations
 :CLASS: heading
 :END:
-Charts and graphs of your financial data using org-plot.
+Charts and graphs of your financial data using external gnuplot scripts.
 
 --------------
 
@@ -551,9 +623,9 @@ Bank Buddy estimates the frequency of subscriptions:
 
 <<Category-Management>>
 
-Next: [[#Customization][Customization]], Previous:
-[[#Subscription-Detection][Subscription Detection]], Up: [[#Top][Bank
-Buddy]]   [[[#Index][Index]]]
+Next: [[#Customizing-Visualizations][Customizing Visualizations]],
+Previous: [[#Subscription-Detection][Subscription Detection]], Up:
+[[#Top][Bank Buddy]]   [[[#Index][Index]]]
 
 ** 9 Category Management [[#Category-Management-1][¶]]
 :PROPERTIES:
@@ -621,13 +693,90 @@ the updated definitions to your init file.
 
 --------------
 
-<<Customization>>
+<<Customizing-Visualizations>>
 
-Next: [[#Key-Bindings][Key Bindings]], Previous:
+Next: [[#Customization][Customization]], Previous:
 [[#Category-Management][Category Management]], Up: [[#Top][Bank Buddy]]
   [[[#Index][Index]]]
 
-** 10 Customization [[#Customization-1][¶]]
+** 10 Customizing Visualizations [[#Customizing-Visualizations-1][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Customizing-Visualizations-1
+:CLASS: chapter
+:END:
+Since version 0.2.0, Bank Buddy generates external gnuplot scripts
+rather than using Org Babel blocks. This provides more flexibility for
+customizing visualizations.
+
+*** Understanding Generated Files [[#Understanding-Generated-Files][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Understanding-Generated-Files
+:CLASS: heading
+:END:
+Each visualization consists of:
+
+- A gnuplot script file (.gp) - Contains the plotting instructions
+- A data file (.dat) - Contains the raw data for the plot
+- The resulting image file (.png) - The generated visualization
+
+*** Customizing Plots [[#Customizing-Plots][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Customizing-Plots
+:CLASS: heading
+:END:
+To customize a plot:
+
+1. Open the .gp file linked in the report
+2. Edit the gnuplot script using standard gnuplot syntax
+3. Regenerate the plot using: =gnuplot filename.gp=
+4. The report will automatically show the updated image
+
+*** Common Customizations [[#Common-Customizations][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Common-Customizations
+:CLASS: heading
+:END:
+
+#+begin_src example-preformatted
+# Change colors
+set style line 1 lc rgb '#0072BD'  # Change bar color
+
+# Adjust text size
+set terminal png size 1000,800 font 'Verdana,12'
+
+# Change plot style
+set style data linespoints    # Instead of bars
+set style fill pattern       # Use patterns instead of solid fill
+
+# Adjust axis labels
+set ylabel 'Spending (GBP)'  # Change currency symbol
+set xtics rotate by -60      # Rotate labels more
+
+# Add a grid
+set grid ytics
+#+end_src
+
+*** Regenerating All Plots [[#Regenerating-All-Plots][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Regenerating-All-Plots
+:CLASS: heading
+:END:
+If you want to regenerate all plots after making global changes:
+
+#+begin_src example-preformatted
+cd report-directory
+for f in *.gp; do gnuplot "$f"; done
+#+end_src
+
+--------------
+
+<<Customization>>
+
+Next: [[#Key-Bindings][Key Bindings]], Previous:
+[[#Customizing-Visualizations][Customizing Visualizations]], Up:
+[[#Top][Bank Buddy]]   [[[#Index][Index]]]
+
+** 11 Customization [[#Customization-1][¶]]
 :PROPERTIES:
 :CUSTOM_ID: Customization-1
 :CLASS: chapter
@@ -675,7 +824,7 @@ Next: [[#Comparison][Comparison]], Previous:
 [[#Customization][Customization]], Up: [[#Top][Bank Buddy]]  
 [[[#Index][Index]]]
 
-** 11 Key Bindings [[#Key-Bindings-1][¶]]
+** 12 Key Bindings [[#Key-Bindings-1][¶]]
 :PROPERTIES:
 :CUSTOM_ID: Key-Bindings-1
 :CLASS: chapter
@@ -708,7 +857,7 @@ Next: [[#Troubleshooting][Troubleshooting]], Previous:
 [[#Key-Bindings][Key Bindings]], Up: [[#Top][Bank Buddy]]  
 [[[#Index][Index]]]
 
-** 12 Comparison [[#Comparison-1][¶]]
+** 13 Comparison [[#Comparison-1][¶]]
 :PROPERTIES:
 :CUSTOM_ID: Comparison-1
 :CLASS: chapter
@@ -793,7 +942,7 @@ bank statements.
 Next: [[#Index][Index]], Previous: [[#Comparison][Comparison]], Up:
 [[#Top][Bank Buddy]]   [[[#Index][Index]]]
 
-** 13 Troubleshooting [[#Troubleshooting-1][¶]]
+** 14 Troubleshooting [[#Troubleshooting-1][¶]]
 :PROPERTIES:
 :CUSTOM_ID: Troubleshooting-1
 :CLASS: chapter
@@ -822,6 +971,18 @@ However, with very large files:
 - Generated reports might be large
 - Consider filtering or pre-processing very large CSV files
 
+*** Visualization Issues [[#Visualization-Issues][¶]]
+:PROPERTIES:
+:CUSTOM_ID: Visualization-Issues
+:CLASS: heading
+:END:
+If plots are not generating correctly:
+
+- Ensure gnuplot is installed and available in your PATH
+- Check that the .gp and .dat files were created correctly
+- Look for error messages when running gnuplot manually
+- Verify that the data file contains the expected format
+
 *** Common Issues [[#Common-Issues][¶]]
 :PROPERTIES:
 :CUSTOM_ID: Common-Issues
@@ -839,6 +1000,10 @@ However, with very large files:
 - Category Mistakes :: If transactions are being assigned to the wrong
   categories, review your regex patterns, particularly those that might
   be too broad
+
+- Plot Customization Problems :: If edits to gnuplot scripts aren't
+  reflected, ensure you're editing the right file and running gnuplot to
+  regenerate
 
 --------------
 

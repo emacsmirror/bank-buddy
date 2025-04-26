@@ -1,7 +1,7 @@
 This is bank-buddy.info, produced by makeinfo version 7.2 from
 bank-buddy.texi.
 
-Copyright © 2025 Your Name
+Copyright © 2025 James Dyer
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -20,7 +20,7 @@ File: bank-buddy.info,  Node: Top,  Next: Introduction,  Up: (dir)
 Bank Buddy
 **********
 
-Copyright © 2025 Your Name
+Copyright © 2025 James Dyer
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -40,6 +40,7 @@ Documentation License".
 * Transaction Categories::      Customizing and managing categories
 * Subscription Detection::      How recurring payments are identified
 * Category Management::         Using bank-buddy-cat-mode
+* Customizing Visualizations::  Working with gnuplot files
 * Customization::               Customizing Bank Buddy
 * Key Bindings::                Keyboard shortcuts
 * Comparison::                  Comparison with other financial packages
@@ -69,7 +70,8 @@ Key Features
      Org-mode with various analysis sections
    • *Interactive Category Management:* Edit and refine categorization
      patterns directly from reports
-   • *Data Visualizations:* Generates charts and graphs using org-plot
+   • *Data Visualizations:* Generates charts and graphs using external
+     gnuplot scripts
    • *Subscription Detection:* Automatically identifies recurring
      payments and estimates monthly costs
    • *CSV-focused Analysis:* Designed specifically for bank statement
@@ -94,6 +96,8 @@ personal bank statements:
      your bank statements.
   5. *Emacs Native:* Built entirely within the Emacs ecosystem,
      leveraging Org-mode for rich, interactive reports.
+  6. *Flexible Visualization:* Uses external gnuplot scripts for easy
+     customization of charts and graphs.
 
 
 File: bank-buddy.info,  Node: Installation,  Next: Quick Start,  Prev: Introduction,  Up: Top
@@ -126,9 +130,20 @@ Dependencies
 ============
 
    • Emacs 26.1 or later
-   • csv.el
    • async.el
-   • org-mode (for reports and plotting)
+   • org-mode (for reports)
+   • gnuplot (system installation for visualizations)
+
+Installing Gnuplot
+==================
+
+Bank Buddy uses gnuplot for creating visualizations.  You need to have
+gnuplot installed on your system:
+
+   • Linux: ‘sudo apt install gnuplot’ (or equivalent for your
+     distribution)
+   • macOS: ‘brew install gnuplot’
+   • Windows: Download from http://www.gnuplot.info/
 
 
 File: bank-buddy.info,  Node: Quick Start,  Next: CSV Format,  Prev: Installation,  Up: Top
@@ -141,6 +156,10 @@ File: bank-buddy.info,  Node: Quick Start,  Next: CSV Format,  Prev: Installatio
   3. Select your CSV file
   4. Choose where to save the Org-mode report
   5. Open the generated report
+
+   Note: Bank Buddy will create external gnuplot script files (.gp) and
+data files (.dat) alongside your report.  These can be edited for
+customization.
 
 
 File: bank-buddy.info,  Node: CSV Format,  Next: Report Generation,  Prev: Quick Start,  Up: Top
@@ -181,6 +200,19 @@ Org file.
    The package processes the data asynchronously, so Emacs remains
 responsive even with large CSV files.  When processing is complete,
 you'll be asked if you want to open the generated report.
+
+Generated Files
+===============
+
+Bank Buddy creates several files during report generation:
+
+   • The main .org report file
+   • Gnuplot script files (.gp) for each visualization
+   • Data files (.dat) containing the raw data for plots
+   • PNG image files for the generated charts
+
+   All these files are preserved for later customization or
+regeneration.
 
 Command Options
 ===============
@@ -224,6 +256,12 @@ Lists the highest spending categories with percentages and averages.
      3. /utl/ *Utilities:* £432.25 (10.2%)
         - Monthly avg: £144.08, Yearly avg: £1,729.00
 
+     #+ATTR_ORG: :width 600
+     [[file:financial-report--top-spending-categories.png]]
+
+     Generated from gnuplot script: [[file:top-spending-categories.gp]]
+     Data file: [[file:top-spending-categories.dat]]
+
 Monthly Spending Patterns
 =========================
 
@@ -245,6 +283,27 @@ Displays spending over time with a visual category breakdown.
      2024-03 *£1414* /hse_____/fod___/utl__/str/web/
      #+end_verse
 
+Monthly Spending Visualization
+==============================
+
+Visual representations of monthly spending patterns.
+
+     *** Monthly Spending Visualization (Stacked Categories)
+
+     #+ATTR_ORG: :width 800
+     [[file:financial-report--monthly-spending-stacked.png]]
+
+     Generated from gnuplot script: [[file:monthly-categories-stacked.gp]]
+     Data file: [[file:monthly-categories-stacked.dat]]
+
+     *** Monthly Spending with Individual Categories
+
+     #+ATTR_ORG: :width 800
+     [[file:financial-report--monthly-spending-categories.png]]
+
+     Generated from gnuplot script: [[file:monthly-categories-lines.gp]]
+     Data file: [[file:monthly-categories-lines.dat]]
+
 Top Merchants
 =============
 
@@ -260,6 +319,12 @@ Lists merchants where you spend the most money.
         - Monthly avg: £400.00, Yearly avg: £4,800.00
      2. *SAINSBURYS:* £345.67 (8.2%)
         - Monthly avg: £115.22, Yearly avg: £1,382.68
+
+     #+ATTR_ORG: :width 600
+     [[file:financial-report--top-merchants.png]]
+
+     Generated from gnuplot script: [[file:top-merchants.gp]]
+     Data file: [[file:top-merchants.dat]]
 
 Recurring Subscriptions
 =======================
@@ -306,7 +371,7 @@ Lists transactions that weren't matched by specific patterns.
 Data Visualizations
 ===================
 
-Charts and graphs of your financial data using org-plot.
+Charts and graphs of your financial data using external gnuplot scripts.
 
 
 File: bank-buddy.info,  Node: Transaction Categories,  Next: Subscription Detection,  Prev: Report Sections,  Up: Top
@@ -444,7 +509,7 @@ Bank Buddy estimates the frequency of subscriptions:
      Transactions that occur multiple times but not at regular intervals
 
 
-File: bank-buddy.info,  Node: Category Management,  Next: Customization,  Prev: Subscription Detection,  Up: Top
+File: bank-buddy.info,  Node: Category Management,  Next: Customizing Visualizations,  Prev: Subscription Detection,  Up: Top
 
 9 Category Management
 *********************
@@ -493,9 +558,66 @@ When adding a new category pattern, you'll be asked if you want to save
 the updated definitions to your init file.
 
 
-File: bank-buddy.info,  Node: Customization,  Next: Key Bindings,  Prev: Category Management,  Up: Top
+File: bank-buddy.info,  Node: Customizing Visualizations,  Next: Customization,  Prev: Category Management,  Up: Top
 
-10 Customization
+10 Customizing Visualizations
+*****************************
+
+Since version 0.2.0, Bank Buddy generates external gnuplot scripts
+rather than using Org Babel blocks.  This provides more flexibility for
+customizing visualizations.
+
+Understanding Generated Files
+=============================
+
+Each visualization consists of:
+
+   • A gnuplot script file (.gp) - Contains the plotting instructions
+   • A data file (.dat) - Contains the raw data for the plot
+   • The resulting image file (.png) - The generated visualization
+
+Customizing Plots
+=================
+
+To customize a plot:
+
+  1. Open the .gp file linked in the report
+  2. Edit the gnuplot script using standard gnuplot syntax
+  3. Regenerate the plot using: ‘gnuplot filename.gp’
+  4. The report will automatically show the updated image
+
+Common Customizations
+=====================
+
+     # Change colors
+     set style line 1 lc rgb '#0072BD'  # Change bar color
+
+     # Adjust text size
+     set terminal png size 1000,800 font 'Verdana,12'
+
+     # Change plot style
+     set style data linespoints    # Instead of bars
+     set style fill pattern       # Use patterns instead of solid fill
+
+     # Adjust axis labels
+     set ylabel 'Spending (GBP)'  # Change currency symbol
+     set xtics rotate by -60      # Rotate labels more
+
+     # Add a grid
+     set grid ytics
+
+Regenerating All Plots
+======================
+
+If you want to regenerate all plots after making global changes:
+
+     cd report-directory
+     for f in *.gp; do gnuplot "$f"; done
+
+
+File: bank-buddy.info,  Node: Customization,  Next: Key Bindings,  Prev: Customizing Visualizations,  Up: Top
+
+11 Customization
 ****************
 
 Core Settings
@@ -557,7 +679,7 @@ bank-buddy-subscription-patterns(list...)Patterns to
 
 File: bank-buddy.info,  Node: Key Bindings,  Next: Comparison,  Prev: Customization,  Up: Top
 
-11 Key Bindings
+12 Key Bindings
 ***************
 
 Global Bindings
@@ -596,7 +718,7 @@ C-r             the report
 
 File: bank-buddy.info,  Node: Comparison,  Next: Troubleshooting,  Prev: Key Bindings,  Up: Top
 
-12 Comparison
+13 Comparison
 *************
 
 Bank Buddy can be compared to several other Emacs packages for financial
@@ -667,7 +789,7 @@ analysis of bank statements.
 
 File: bank-buddy.info,  Node: Troubleshooting,  Next: Index,  Prev: Comparison,  Up: Top
 
-13 Troubleshooting
+14 Troubleshooting
 ******************
 
 CSV Parsing Issues
@@ -690,6 +812,16 @@ However, with very large files:
    • Generated reports might be large
    • Consider filtering or pre-processing very large CSV files
 
+Visualization Issues
+====================
+
+If plots are not generating correctly:
+
+   • Ensure gnuplot is installed and available in your PATH
+   • Check that the .gp and .dat files were created correctly
+   • Look for error messages when running gnuplot manually
+   • Verify that the data file contains the expected format
+
 Common Issues
 =============
 
@@ -703,6 +835,9 @@ Date Format Issues
 Category Mistakes
      If transactions are being assigned to the wrong categories, review
      your regex patterns, particularly those that might be too broad
+Plot Customization Problems
+     If edits to gnuplot scripts aren't reflected, ensure you're editing
+     the right file and running gnuplot to regenerate
 
 
 File: bank-buddy.info,  Node: Index,  Prev: Troubleshooting,  Up: Top
@@ -712,21 +847,22 @@ Index
 
 
 Tag Table:
-Node: Top613
-Node: Introduction1971
-Node: Installation4018
-Node: Quick Start4915
-Node: CSV Format5236
-Node: Report Generation5836
-Node: Report Sections6445
-Node: Transaction Categories9903
-Node: Subscription Detection12705
-Node: Category Management14161
-Node: Customization15503
-Node: Key Bindings17385
-Node: Comparison18336
-Node: Troubleshooting20903
-Node: Index22123
+Node: Top614
+Node: Introduction2032
+Node: Installation4211
+Node: Quick Start5467
+Node: CSV Format5942
+Node: Report Generation6542
+Node: Report Sections7517
+Node: Transaction Categories12067
+Node: Subscription Detection14869
+Node: Category Management16325
+Node: Customizing Visualizations17680
+Node: Customization19323
+Node: Key Bindings21212
+Node: Comparison22163
+Node: Troubleshooting24730
+Node: Index26438
 
 End Tag Table
 

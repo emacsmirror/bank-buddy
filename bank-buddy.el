@@ -752,8 +752,8 @@ This function runs in a separate process via async.el."
 
                       (when (> debit 0) ;; Only count positive debits
                         ;; Increment monthly transaction count
-                        (puthash month 
-                                 (1+ (gethash month monthly-transaction-counts 0)) 
+                        (puthash month
+                                 (1+ (gethash month monthly-transaction-counts 0))
                                  monthly-transaction-counts)
                         ;; Call the local categorizer, passing local hash tables
                         (bank-buddy--categorize-payment-local
@@ -782,7 +782,7 @@ This function runs in a separate process via async.el."
 ;; These functions assume the global variables have been populated by the async callback.
 
 (defun bank-buddy-generate-monthly-progress-comparison (output-dir)
-  "Generate a plot comparing monthly spending progress using external gnuplot."
+  "Generate a plot comparing monthly spending progress to OUTPUT-DIR ."
   (let* ((months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
          (data-file (expand-file-name "monthly-progress-comparison.dat" output-dir))
          (plot-file (expand-file-name "monthly-progress-comparison.gp" output-dir))
@@ -1214,7 +1214,7 @@ This function runs in a separate process via async.el."
           (insert "No monthly spending data available.\n"))))
 
 (defun bank-buddy-generate-monthly-transaction-counts (output-dir)
-  "Generate a section showing transaction counts for each month with external gnuplot using OUTPUT-DIR."
+  "Generate a section showing transaction counts for each month to OUTPUT-DIR."
   (let ((months-list '())
         (total-transactions 0)
         (total-spending 0))
@@ -1569,10 +1569,10 @@ This function runs in a separate process via async.el."
            (when (hash-table-p (plist-get result :subs))
              (maphash (lambda (k v) (puthash k v bank-buddy-subs)) (plist-get result :subs)))
            (when (hash-table-p (plist-get result :monthly-transaction-counts))
-             (maphash (lambda (k v) (puthash k v bank-buddy-monthly-transaction-counts)) 
+             (maphash (lambda (k v) (puthash k v bank-buddy-monthly-transaction-counts))
                       (plist-get result :monthly-transaction-counts)))
            (when (hash-table-p (plist-get result :daily-cumulative-totals))
-             (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals)) 
+             (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals))
                       (plist-get result :daily-cumulative-totals)))
            
            ;; Get the unmatched transactions list
