@@ -18,7 +18,7 @@ Here is an example of the type of report that is generated (obviously using test
 
 #+attr_org: :width 300px
 #+attr_html: :width 100%
-[[file:tests/financial-report.org]]
+[[file:tests/bank-statement_report/bank-statement_report.org]]
 
 See [[file:docs/bank-buddy.org]] for the manual!
 
