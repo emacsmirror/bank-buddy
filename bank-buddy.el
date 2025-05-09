@@ -2,7 +2,7 @@
 ;;
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
-;; Version: 0.2.0
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
 ;; Keywords: matching
 ;; URL: https://github.com/captainflasmr/bank-buddy
@@ -782,7 +782,7 @@ This function runs in a separate process via async.el."
 ;; These functions assume the global variables have been populated by the async callback.
 
 (defun bank-buddy-generate-monthly-progress-comparison (output-dir)
-  "Generate a plot comparing monthly spending progress to OUTPUT-DIR ."
+  "Generate a plot comparing monthly spending progress to OUTPUT-DIR."
   (let* ((months (sort (hash-table-keys bank-buddy-monthly-totals) #'string<))
          (data-file (expand-file-name "monthly-progress-comparison.dat" output-dir))
          (plot-file (expand-file-name "monthly-progress-comparison.gp" output-dir))
@@ -804,17 +804,39 @@ This function runs in a separate process via async.el."
               (insert (format "\t%.2f" amount))))
           (insert "\n"))))
     
-    ;; Generate gnuplot script
+    ;; Generate gnuplot script with dark background and improved visibility
     (with-temp-file plot-file
-      (insert (format "set terminal png size 800,600 enhanced font 'Verdana,10'\n"))
+      (insert "set terminal png size 800,600 enhanced font 'Verdana,10'\n")
       (insert (format "set output '%s'\n" image-file))
-      (insert "set title 'Monthly Spending Progress Comparison'\n")
-      (insert "set xlabel 'Day of Month'\n")
-      (insert "set ylabel 'Cumulative Spending (£)'\n")
-      (insert "set key outside right\n")
-      (insert "set xtics 1,5\n")
-      (insert "set grid\n")
-      (insert (format "plot for [i=2:%d] '%s' using 1:i with lines title columnhead\n"
+      
+      ;; Set dark background and light text/border colors
+      (insert "set object 1 rectangle from screen 0,0 to screen 1,1 fillcolor rgb \"#000000\" behind\n")
+      (insert "set border lc rgb \"#FFFFFF\"\n")
+      (insert "set title 'Monthly Spending Progress Comparison' textcolor rgb \"#FFFFFF\"\n")
+      (insert "set xlabel 'Day of Month' textcolor rgb \"#FFFFFF\"\n")
+      (insert "set ylabel 'Cumulative Spending (£)' textcolor rgb \"#FFFFFF\"\n")
+      (insert "set key outside right textcolor rgb \"#FFFFFF\"\n")
+      (insert "set xtics 1,5 textcolor rgb \"#FFFFFF\"\n")
+      (insert "set ytics textcolor rgb \"#FFFFFF\"\n")
+      (insert "set grid lc rgb \"#555555\"\n")
+      
+      ;; Define bright, high-contrast line colors with increased thickness
+      (insert "set linetype 1 lc rgb \"#FF0000\" lw 1\n")  ;; Red
+      (insert "set linetype 2 lc rgb \"#00FFFF\" lw 1\n")  ;; Cyan
+      (insert "set linetype 3 lc rgb \"#00FF00\" lw 1\n")  ;; Bright green
+      (insert "set linetype 4 lc rgb \"#FF00FF\" lw 1\n")  ;; Magenta
+      (insert "set linetype 5 lc rgb \"#FFFF00\" lw 1\n")  ;; Yellow
+      
+      ;; Add more line types if needed for additional months
+      (when (> (length months) 5)
+        (insert "set linetype 6 lc rgb \"#FF8000\" lw 1\n")  ;; Orange
+        (insert "set linetype 7 lc rgb \"#8080FF\" lw 1\n")  ;; Light blue
+        (insert "set linetype 8 lc rgb \"#00FF80\" lw 1\n")  ;; Mint green
+        (insert "set linetype 9 lc rgb \"#FF80FF\" lw 1\n")  ;; Light pink
+        (insert "set linetype 10 lc rgb \"#FFFFFF\" lw 1\n")) ;; White
+      
+      ;; Plot with explicit line types
+      (insert (format "plot for [i=2:%d] '%s' using 1:i with lines lt (i-1) title columnhead\n"
                       (1+ (length months)) data-file)))
     
     ;; Run gnuplot
