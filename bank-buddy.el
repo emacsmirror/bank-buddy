@@ -2,7 +2,7 @@
 ;;
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
-;; Version: 0.2.1
+;; Version: 0.2.2
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
 ;; Keywords: matching
 ;; URL: https://github.com/captainflasmr/bank-buddy
@@ -98,6 +98,89 @@
 
 (defvar bank-buddy-date-last nil
   "Last transaction date.  Populated by async callback.")
+
+(defun bank-buddy-categorize-transaction-name (name)
+  "Categorize transaction NAME and return the category code.
+This is a helper function that mimics the categorization logic
+from bank-buddy--categorize-payment-local but only returns the category."
+  (let ((category-found nil))
+    ;; Find category using the same logic as the main categorization function
+    (cl-loop for category in bank-buddy-core-cat-list-defines
+             when (string-match-p (nth 0 category) name)
+             do (setq category-found (nth 1 category))
+             and return t)
+    (unless category-found 
+      (setq category-found "o")) ; Default to "other"
+    category-found))
+
+(defun bank-buddy-add-category-column-to-csv (csv-file output-file)
+  "Read CSV-FILE, add a category column, and save to OUTPUT-FILE.
+The category is determined using the same logic as the report generation."
+  (interactive "fInput CSV file: \nFOutput CSV file with categories: ")
+  
+  (let ((payments '())
+        (categorized-lines '()))
+    
+    ;; Parse the CSV file
+    (with-temp-buffer
+      (insert-file-contents csv-file)
+      (setq payments (bank-buddy--csv-parse-buffer t)))
+    
+    ;; Process each payment and add category
+    (dolist (payment payments)
+      (let* ((date-cell (nth 0 payment))
+             (desc-cell (nth 1 payment))
+             (debit-cell (nth 2 payment))
+             (balance-cell (when (> (length payment) 3) (nth 3 payment)))
+             (date (if date-cell (cdr date-cell) ""))
+             (description (if desc-cell (cdr desc-cell) ""))
+             (debit-str (if debit-cell (cdr debit-cell) ""))
+             (balance-str (if balance-cell (cdr balance-cell) ""))
+             ;; Categorize the transaction
+             (category-code (bank-buddy-categorize-transaction-name 
+                           (replace-regexp-in-string " " "-" description)))
+             (category-name (or (cdr (assoc category-code bank-buddy-core-category-names))
+                              category-code)))
+        
+        ;; Create the new line with category information
+        (let ((new-line (if balance-cell
+                           (list date description debit-str balance-str 
+                                category-code category-name)
+                         (list date description debit-str 
+                              category-code category-name))))
+          (push new-line categorized-lines))))
+    
+    ;; Reverse to maintain original order
+    ;; (setq categorized-lines (nreverse categorized-lines))
+    
+    ;; Write the enhanced CSV file
+    (with-temp-file output-file
+      ;; Write header
+      (if (and payments (> (length (car payments)) 3))
+          (insert "Date,Description,Amount,Balance,Category_Code,Category_Name\n")
+        (insert "Date,Description,Amount,Category_Code,Category_Name\n"))
+      
+      ;; Write data lines
+      (dolist (line categorized-lines)
+        (insert (mapconcat (lambda (field)
+                            (if (string-match "," field)
+                                (format "\"%s\"" field)
+                              field))
+                          line ","))
+        (insert "\n")))
+    
+    (message "Enhanced CSV with categories saved to: %s" output-file)))
+
+(defun bank-buddy-generate-enhanced-csv (csv-file output-dir)
+  "Generate an enhanced CSV file with category information in OUTPUT-DIR.
+This function is called during report generation to create the enhanced CSV."
+  (let* ((base-name (file-name-base csv-file))
+         (enhanced-csv-file (expand-file-name 
+                           (format "%s_with_categories.csv" base-name)
+                           output-dir)))
+    
+    (bank-buddy-add-category-column-to-csv csv-file enhanced-csv-file)
+    enhanced-csv-file))
 
 (defun bank-buddy--csv-parse-buffer (first-line-contains-keys &optional buffer)
   "Parse a buffer containing CSV data, return data as a list of alists or lists.
@@ -1491,7 +1574,7 @@ This function runs in a separate process via async.el."
 
 ;;;###autoload
 (defun bank-buddy-generate-report (csv-file output-file)
-  "Generate financial report from CSV-FILE asynchronously and save to OUTPUT-FILE."
+  "Generate financial report from CSV-FILE and create enhanced CSV with categories."
   (interactive "fInput CSV file: \nFOutput Org file: ")
 
   ;; Ensure async is available
@@ -1511,22 +1594,16 @@ This function runs in a separate process via async.el."
 
   ;; Start the asynchronous task
   (async-start
-   ;; The worker function
+   ;; The worker function (same as original)
    `(lambda ()
-      ;; Set up the environment for the async process
       (setq load-path ',load-path)
-      
-      ;; Load minimal required libraries
       (require 'cl-lib)
-      
-      ;; Load the bank-buddy package
       (let ((bank-buddy-file ,(or load-file-name
                                   (locate-library "bank-buddy")
                                   (buffer-file-name))))
         (when bank-buddy-file
           (load-file bank-buddy-file))
         
-        ;; Pass all needed variables to the worker
         (let ((bank-buddy-core-exclude-large-txns ,bank-buddy-core-exclude-large-txns)
               (bank-buddy-core-large-txn-threshold ,bank-buddy-core-large-txn-threshold)
               (bank-buddy-core-subscription-min-occurrences ,bank-buddy-core-subscription-min-occurrences)
@@ -1534,16 +1611,13 @@ This function runs in a separate process via async.el."
               (bank-buddy-core-subscription-patterns ',bank-buddy-core-subscription-patterns)
               (bank-buddy-core-category-names ',bank-buddy-core-category-names))
           
-          ;; Call the worker function and include file paths in the result
           (let ((worker-result (bank-buddy--process-csv-async-worker ,csv-file)))
-            ;; Add the file paths to the result plist
             (plist-put worker-result :csv-file ,csv-file)
             (plist-put worker-result :output-file ,output-file)
             worker-result))))
    
-   ;; The callback function that uses file paths from the result
+   ;; Enhanced callback function
    (lambda (result)
-     ;; Extract file paths from the result
      (let* ((csv-file (plist-get result :csv-file))
             (output-file (plist-get result :output-file))
             (worker-err (plist-get result :error))
@@ -1556,15 +1630,21 @@ This function runs in a separate process via async.el."
              (display-warning 'bank-buddy (format "Background processing failed: %s" worker-err) :error))
          
          (progn
-           (bank-buddy-show-progress "Generating report..." t)
+           (bank-buddy-show-progress "Generating report and enhanced CSV..." t)
            
            ;; Create the report directory
            (make-directory report-dir t)
            
+           ;; Generate the enhanced CSV with categories
+           (let ((enhanced-csv-file (bank-buddy-generate-enhanced-csv csv-file report-dir)))
+             (bank-buddy-show-progress 
+              (format "Enhanced CSV with categories created: %s" 
+                     (file-name-nondirectory enhanced-csv-file)) t))
+           
            ;; Update output-file to be in the new directory
            (setq output-file (expand-file-name (file-name-nondirectory output-file) report-dir))
 
-           ;; Clear previous global data
+             ;; Clear previous global data
            (clrhash bank-buddy-cat-tot)
            (clrhash bank-buddy-merchants)
            (clrhash bank-buddy-monthly-totals)
@@ -1599,37 +1679,87 @@ This function runs in a separate process via async.el."
            
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
-           
-           ;; Generate the report content in a temp buffer
+         
+           ;; Generate the report content
            (with-temp-buffer
-         (org-mode)
-         (insert "#+title: Financial Report (Bank Buddy)\n")
-         (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
-         (insert (format "#+date: %s\n" (format-time-string "%F %T")))
-         (insert "#+options: toc:1 num:nil\n")
-         (insert "#+startup: inlineimages showall\n\n")
-         
-         ;; Now pass report-dir to all functions that need it:
-         (bank-buddy-generate-summary-overview)
-         (bank-buddy-generate-top-spending-categories report-dir)  ; Pass report-dir
-         (bank-buddy-generate-monthly-spending)
-         (bank-buddy-generate-monthly-transaction-counts report-dir)  ; Pass report-dir
-         (bank-buddy-generate-monthly-categories-table report-dir)  ; Pass report-dir
-         (bank-buddy-generate-monthly-category-breakdowns report-dir)
-         (bank-buddy-generate-monthly-progress-comparison report-dir)
-         (bank-buddy-generate-top-merchants report-dir)  ; Pass report-dir
-         (bank-buddy-generate-subscriptions)
-         (bank-buddy-generate-transaction-size-distribution)
-         (bank-buddy-generate-unmatched-transactions)
-         
-         (write-region (point-min) (point-max) output-file nil 'quiet))
+             (org-mode)
+             (insert "#+title: Financial Report (Bank Buddy)\n")
+             (insert (format "#+subtitle: Data from %s\n" (file-name-nondirectory csv-file)))
+             (insert (format "#+date: %s\n" (format-time-string "%F %T")))
+             (insert "#+options: toc:1 num:nil\n")
+             (insert "#+startup: inlineimages showall\n\n")
+             
+             ;; Add reference to enhanced CSV
+             (insert "* Enhanced Data Files\n\n")
+             (insert (format "- Original CSV: [[file:%s][%s]]\n" 
+                           (file-relative-name csv-file report-dir)
+                           (file-name-nondirectory csv-file)))
+             (insert (format "- Enhanced CSV with categories: [[file:%s][%s]]\n\n" 
+                           (file-relative-name 
+                            (expand-file-name 
+                             (format "%s_with_categories.csv" (file-name-base csv-file))
+                             report-dir)
+                            report-dir)
+                           (format "%s_with_categories.csv" (file-name-base csv-file))))
+             (insert "The enhanced CSV includes two additional columns:\n")
+             (insert "- =Category_Code=: The 3-letter category code assigned\n")
+             (insert "- =Category_Name=: The human-readable category name\n\n")
+             
+             ;; Generate all the existing report sections
+             (bank-buddy-generate-summary-overview)
+             (bank-buddy-generate-top-spending-categories report-dir)
+             (bank-buddy-generate-monthly-spending)
+             (bank-buddy-generate-monthly-transaction-counts report-dir)  ; Pass report-dir
+             (bank-buddy-generate-monthly-categories-table report-dir)  ; Pass report-dir
+             (bank-buddy-generate-monthly-category-breakdowns report-dir)
+             (bank-buddy-generate-monthly-progress-comparison report-dir)
+             (bank-buddy-generate-top-merchants report-dir)  ; Pass report-dir
+             (bank-buddy-generate-subscriptions)
+             (bank-buddy-generate-transaction-size-distribution)
+             (bank-buddy-generate-unmatched-transactions)
+                      
+             (write-region (point-min) (point-max) output-file nil 'quiet))
            
            (bank-buddy-show-progress
-            (format "Report generated successfully: %s\nMonthly plots saved to: %s"
-                    output-file report-dir) t)
+            (format "Report and enhanced CSV generated successfully in: %s" report-dir) t)
            
            (when (yes-or-no-p (format "Open generated report %s now?" output-file))
              (find-file output-file))))))))
+
+;;;###autoload
+(defun bank-buddy-create-enhanced-csv-only ()
+  "Create an enhanced CSV with categories from the current CSV buffer."
+  (interactive)
+  (let (input-file output-file)
+    (cond
+     ;; Case 1: In a CSV buffer
+     ((and buffer-file-name (string-match-p "\\.csv$" buffer-file-name))
+      (setq input-file buffer-file-name)
+      (setq output-file (concat (file-name-sans-extension buffer-file-name) "_with_categories.csv")))
+     
+     ;; Case 2: In Dired
+     ((eq major-mode #'dired-mode)
+      (let ((file (dired-get-filename nil t)))
+        (if (and file (string-match-p "\\.csv$" file))
+            (progn
+              (setq input-file file)
+              (setq output-file (concat (file-name-sans-extension file) "_with_categories.csv")))
+          (error "No CSV file selected in Dired"))))
+     
+     ;; Case 3: Manual selection
+     (t
+      (setq input-file (read-file-name "Input CSV file: " nil nil t))
+      (setq output-file (read-file-name "Output CSV file: " 
+                                       (file-name-directory input-file)
+                                       nil nil
+                                       (concat (file-name-sans-extension 
+                                              (file-name-nondirectory input-file))
+                                              "_with_categories.csv")))))
+    
+    ;; Generate the enhanced CSV
+    (bank-buddy-add-category-column-to-csv input-file output-file)
+    (when (yes-or-no-p (format "Open enhanced CSV %s now?" output-file))
+      (find-file output-file))))
 
 ;;;###autoload
 (defun bank-buddy-generate ()

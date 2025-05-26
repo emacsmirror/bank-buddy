@@ -52,6 +52,42 @@ See [[file:docs/bank-buddy.org]] for the manual!
 
 * Whats New
 
+** <2025-05-26> 0.2.2
+
+Added CSV category enhancement functionality
+
+- Enhanced CSV includes Category_Code and Category_Name columns
+- Automatically creates enhanced CSV in report directory alongside reports
+- Enables sorting and analysis of transactions by category in csv-mode
+
+Now, when you generate your financial reports, Bank Buddy automatically creates an enhanced CSV file with category information for every single transaction.
+
+Every transaction in your bank statement now gets two additional columns:
+
+- *Category_Code*: The 3-letter category code (like "fod" for food, "trn" for transport)
+- *Category_Name*: The human-readable category name (like "Food", "Transport", "Amazon")
+
+This enhanced CSV is automatically saved alongside your report, giving you the raw categorized data for deeper analysis.
+
+Open the enhanced CSV in Emacs and use =csv-mode= for expense investigation:
+
+*Sort by category to group similar expenses:*
+#+begin_src 
+M-x csv-mode
+C-c C-s  (csv-sort-fields)
+#+end_src
+
+Choose the Category_Name column, and all your food expenses are grouped together and you can see patterns you never noticed before.
+
+The enhancement works automatically with existing Bank Buddy workflows:
+
+1. Run =M-x bank-buddy-generate= on your CSV file
+2. Find the =*_with_categories.csv= file in your report directory
+3. Open it in Emacs and enable =csv-mode=
+4. Start sorting and investigating
+
+You can also create enhanced CSVs without full reports using =M-x bank-buddy-create-enhanced-csv-only=.
+
 ** <2025-05-09> 0.2.1
 
 Improved the readability of the monthly progress comparison by inverting so the graph lines are always going to be clearer.
