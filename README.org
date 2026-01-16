@@ -628,6 +628,17 @@ The report especially on a thousand line csv can take some seconds
 
 ** TODO parsing can't handle carriage returns at end of file!!
 
+** TODO When processing CSV files with certain data patterns, the async worker encounters nil values that cause crashes with:
+
+#+begin_src 
+error in process filter: Quit [2 times]
+error in process sentinel: let*: Wrong type argument: stringp, nil
+#+end_src
+
+A line that doesn't work for some reason is:
+
+2025-10-09,SP PIPINGROCK CD 2515,14.01
+
 * Troubleshooting
 
 ** CSV Parsing Issues
