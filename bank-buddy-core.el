@@ -145,6 +145,23 @@
   :type '(alist :key-type string :value-type string)
   :group 'bank-buddy)
 
+(defcustom bank-buddy-core-transfer-patterns
+  '()
+  "Patterns to identify transfer transactions excluded from spending totals.
+Each entry is a (REGEX . NAME) cons cell where REGEX is matched against
+the transaction description (with spaces replaced by hyphens) and NAME
+is a human-readable label for the transfer type.
+Matching is case-insensitive (uses `string-match-p' with default
+`case-fold-search').
+Transactions matching these patterns are excluded from all spending totals,
+category totals, merchant totals, transaction counts, and the daily cumulative
+spending progress plot.  They are instead tracked separately and shown in a
+dedicated `Transfers' section of the report.
+Example: \\='((\"save.*pennies\" . \"Savings round-up\")
+            (\"kate.*kate\" . \"Personal transfer\"))"
+  :type '(alist :key-type string :value-type string)
+  :group 'bank-buddy)
+
 (defun bank-buddy-core-log-to-file (message &optional file)
   "Log a MESSAGE to a FILE."
   (let ((logfile (or file "bank-buddy.log")))

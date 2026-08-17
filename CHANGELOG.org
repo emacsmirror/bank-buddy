@@ -11,6 +11,17 @@ project's main git repository: [[https://github.com/captainflasmr/bank-buddy]]
 
 * Versions
 
+** <2026-08-17> 0.3.0
+
+Added transfer exclusion feature
+
+- New customization variable =bank-buddy-core-transfer-patterns= for defining transfer patterns
+- Transactions matching transfer patterns are excluded from all spending totals, category totals, merchant totals, transaction counts, and the daily cumulative spending progress plot
+- New "Transfers (Excluded from Spending)" report section with by-month and by-type breakdown tables
+- Enhanced CSV marks transfer transactions with category code =xfr= and the transfer name as the category name
+- Default transfer patterns list is empty, preserving existing behavior until configured
+- Updated README with transfer exclusion documentation
+
 ** <2025-05-26> 0.2.2
 
 Added CSV category enhancement functionality

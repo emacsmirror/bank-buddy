@@ -470,6 +470,32 @@ Define subscription patterns for better detection of recurring payments:
     ))
 #+end_src
 
+** Transfer Exclusion
+
+Transactions matching transfer patterns are excluded from all spending totals
+and shown in a separate "Transfers" section of the report. This is useful for
+excluding internal transfers (savings round-ups, personal transfers, etc.)
+ that reduce your account balance but are not actual consumption.
+
+Customize =bank-buddy-core-transfer-patterns= to add transfer patterns:
+
+#+begin_src emacs-lisp
+  (setq bank-buddy-core-transfer-patterns
+        '(("save.*pennies" . "Savings round-up")
+          ("kate.*kate" . "Personal transfer")))
+#+end_src
+
+Each entry is a =(REGEX . NAME)= cons cell where:
+- =REGEX= is matched against the transaction description (with spaces replaced by hyphens)
+- =NAME= is a human-readable label shown in the report
+
+Matching is case-insensitive. Transactions matching a transfer pattern are:
+- Excluded from total spending, monthly totals, and category totals
+- Excluded from merchant totals and transaction counts
+- Excluded from the daily cumulative spending progress plot
+- Shown in a dedicated "Transfers" section with monthly and per-type breakdowns
+- Marked with category code "xfr" in the enhanced CSV
+
 * Advanced Usage
 
 ** Integration with Other Financial Tools

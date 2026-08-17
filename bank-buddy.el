@@ -2,7 +2,7 @@
 ;;
 ;; Copyright (C) 2025 James Dyer
 ;; Author: James Dyer <captainflasmr@gmail.com>
-;; Version: 0.2.2
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4"))
 ;; Keywords: matching
 ;; URL: https://github.com/captainflasmr/bank-buddy
@@ -93,6 +93,11 @@
 (defvar bank-buddy-subs (make-hash-table :test 'equal)
   "Hash table for tracking potential subscriptions.  Populated by async callback.")
 
+(defvar bank-buddy-transfers (make-hash-table :test 'equal)
+  "Hash table storing transfer transactions excluded from spending.
+Key is month string (YYYY-MM), value is a list of
+\(date description amount transfer-name).  Populated by async callback.")
+
 (defvar bank-buddy-date-first nil
   "First transaction date.  Populated by async callback.")
 
@@ -112,6 +117,15 @@ from bank-buddy--categorize-payment-local but only returns the category."
     (unless category-found 
       (setq category-found "o")) ; Default to "other"
     category-found))
+
+(defun bank-buddy--match-transfer (name)
+  "Check if transaction NAME matches a transfer pattern.
+NAME should have spaces replaced by hyphens (same format as categorization).
+Return the transfer name (string) if matched, nil otherwise.
+Uses `bank-buddy-core-transfer-patterns'."
+  (cl-loop for (pattern . transfer-name) in bank-buddy-core-transfer-patterns
+           when (string-match-p pattern name)
+           return transfer-name))
 
 (defun bank-buddy-add-category-column-to-csv (csv-file output-file)
   "Read CSV-FILE, add a category column, and save to OUTPUT-FILE.
@@ -137,10 +151,15 @@ The category is determined using the same logic as the report generation."
              (debit-str (if debit-cell (cdr debit-cell) ""))
              (balance-str (if balance-cell (cdr balance-cell) ""))
              ;; Categorize the transaction
-             (category-code (bank-buddy-categorize-transaction-name 
-                           (replace-regexp-in-string " " "-" description)))
-             (category-name (or (cdr (assoc category-code bank-buddy-core-category-names))
-                              category-code)))
+             (desc-normalized (replace-regexp-in-string " " "-" description))
+             (transfer-match (bank-buddy--match-transfer desc-normalized))
+             (category-code (if transfer-match
+                                 "xfr"
+                               (bank-buddy-categorize-transaction-name desc-normalized)))
+             (category-name (if transfer-match
+                                 transfer-match
+                               (or (cdr (assoc category-code bank-buddy-core-category-names))
+                                   category-code))))
         
         ;; Create the new line with category information
         (let ((new-line (if balance-cell
@@ -759,6 +778,7 @@ This function runs in a separate process via async.el."
         (daily-cumulative-totals (make-hash-table :test 'equal))
         (txn-size-dist (make-hash-table :test 'equal))
         (subs (make-hash-table :test 'equal))
+        (transfers (make-hash-table :test 'equal))
         (bank-buddy-unmatched-transactions-local '())
         (monthly-transaction-counts (make-hash-table :test 'equal))
         (date-first nil)
@@ -825,26 +845,30 @@ This function runs in a separate process via async.el."
                         (setq current-month month)
                         (setq previous-day-total 0))
                       
-                      (let ((month-day-key (concat month "-" day)))
-                        ;; Calculate the cumulative total for the current day
-                        (setq previous-day-total (+ previous-day-total debit))
-                        ;; Store the new cumulative total for the current day
-                        (puthash month-day-key previous-day-total daily-cumulative-totals))
-
                       (setq last-processed-date date) ; Update the last processed date
 
                       (when (> debit 0) ;; Only count positive debits
-                        ;; Increment monthly transaction count
-                        (puthash month
-                                 (1+ (gethash month monthly-transaction-counts 0))
-                                 monthly-transaction-counts)
-                        ;; Call the local categorizer, passing local hash tables
-                        (bank-buddy--categorize-payment-local
-                         (replace-regexp-in-string " " "-" description)
-                         debit month date
-                         cat-tot merchants monthly-totals txn-size-dist subs)
-                        (setq total-transactions (1+ total-transactions))
-                        (setq total-amount (+ total-amount debit)))))))))
+                        (let ((transfer-match (bank-buddy--match-transfer
+                                               (replace-regexp-in-string " " "-" description))))
+                          (if transfer-match
+                              ;; Transfer - track but exclude from spending totals
+                              (puthash month
+                                       (cons (list date description debit transfer-match)
+                                             (gethash month transfers '()))
+                                       transfers)
+                            ;; Normal spending - update cumulative, counts, and categorize
+                            (let ((month-day-key (concat month "-" day)))
+                              (setq previous-day-total (+ previous-day-total debit))
+                              (puthash month-day-key previous-day-total daily-cumulative-totals))
+                            (puthash month
+                                     (1+ (gethash month monthly-transaction-counts 0))
+                                     monthly-transaction-counts)
+                            (bank-buddy--categorize-payment-local
+                             (replace-regexp-in-string " " "-" description)
+                             debit month date
+                             cat-tot merchants monthly-totals txn-size-dist subs)
+                            (setq total-transactions (1+ total-transactions))
+                            (setq total-amount (+ total-amount debit)))))))))))
         (error (setq error-occurred (format "Error processing payments: %S" err)))))
 
 
@@ -860,7 +884,8 @@ This function runs in a separate process via async.el."
           :txn-size-dist txn-size-dist
           :subs subs
           :unmatched-transactions bank-buddy-unmatched-transactions-local
-          :monthly-transaction-counts monthly-transaction-counts)))
+          :monthly-transaction-counts monthly-transaction-counts
+          :transfers transfers)))
 
 ;; These functions assume the global variables have been populated by the async callback.
 
@@ -1572,6 +1597,94 @@ This function runs in a separate process via async.el."
       (dolist (line (nreverse result-lines))
         (insert line "\n")))))
 
+(defun bank-buddy-generate-transfers-section ()
+  "Generate the transfers section showing transactions excluded from spending."
+  (let ((total-transfers 0)
+        (total-amount 0)
+        (month-count 0)
+        (type-totals (make-hash-table :test 'equal))
+        (type-counts (make-hash-table :test 'equal))
+        (months-list '())
+        (types-list '()))
+
+    ;; Aggregate data from the transfers hash table
+    (maphash
+     (lambda (month entries)
+       (let ((month-total 0)
+             (month-count-len 0))
+         (dolist (entry entries)
+           (let ((amount (nth 2 entry))
+                 (transfer-name (nth 3 entry)))
+             (setq month-total (+ month-total amount))
+             (setq month-count-len (1+ month-count-len))
+             (setq total-transfers (1+ total-transfers))
+             (setq total-amount (+ total-amount amount))
+             (puthash transfer-name
+                      (+ (gethash transfer-name type-totals 0) amount)
+                      type-totals)
+             (puthash transfer-name
+                      (1+ (gethash transfer-name type-counts 0))
+                      type-counts)))
+         (push (list month month-count-len month-total) months-list)
+         (setq month-count (1+ month-count))))
+     bank-buddy-transfers)
+
+    ;; Build type list sorted by total (descending)
+    (maphash
+     (lambda (type-name total)
+       (push (cons type-name total) types-list))
+     type-totals)
+    (setq types-list (sort types-list (lambda (a b) (> (cdr a) (cdr b)))))
+
+    ;; Sort months chronologically
+    (setq months-list (sort months-list
+                            (lambda (a b) (string< (car a) (car b)))))
+
+    ;; Generate the report section
+    (insert "\n* Transfers (Excluded from Spending)\n\n")
+    (if (= total-transfers 0)
+        (progn
+          (insert "No transactions were excluded as transfers.\n")
+          (insert "To configure transfer exclusions, customize `bank-buddy-core-transfer-patterns'.\n"))
+      (progn
+        (insert (format "- *Total Transfers Excluded:* %d transactions totalling £%.2f\n"
+                        total-transfers total-amount))
+        (when (> month-count 0)
+          (insert (format "- *Monthly Average:* £%.2f\n" (/ total-amount month-count))))
+        (insert "\nTo change which transactions are excluded, customize `bank-buddy-core-transfer-patterns'.\n")
+
+        ;; Transfers by Month table
+        (insert "\n** Transfers by Month\n\n")
+        (insert "#+NAME: transfers-by-month\n")
+        (insert "| Month | Count | Total (£) |\n")
+        (insert "|-------+-------+-----------|\n")
+        (dolist (month-data months-list)
+          (insert (format "| %s | %d | %.2f |\n"
+                          (nth 0 month-data)
+                          (nth 1 month-data)
+                          (nth 2 month-data))))
+        (insert (format "| *Total* | *%d* | *%.2f* |\n" total-transfers total-amount))
+
+        ;; Transfers by Type table
+        (insert "\n** Transfers by Type\n\n")
+        (insert "#+NAME: transfers-by-type\n")
+        (insert "| Transfer Type | Count | Total (£) | Monthly Avg (£) |\n")
+        (insert "|--------------+-------+-----------+-----------------|\n")
+        (dolist (type-data types-list)
+          (let ((type-name (car type-data))
+                (type-total (cdr type-data)))
+            (insert (format "| %s | %d | %.2f | %.2f |\n"
+                            type-name
+                            (gethash type-name type-counts 0)
+                            type-total
+                            (if (> month-count 0) (/ type-total month-count) 0)))))
+        (insert (format "| *Total* | *%d* | *%.2f* | *%.2f* |\n"
+                        total-transfers
+                        total-amount
+                        (if (> month-count 0) (/ total-amount month-count) 0)))))
+
+    (insert "\n")))
+
 ;;;###autoload
 (defun bank-buddy-generate-report (csv-file output-file)
   "Generate financial report from CSV-FILE and create enhanced CSV with categories."
@@ -1609,7 +1722,8 @@ This function runs in a separate process via async.el."
               (bank-buddy-core-subscription-min-occurrences ,bank-buddy-core-subscription-min-occurrences)
               (bank-buddy-core-cat-list-defines ',bank-buddy-core-cat-list-defines)
               (bank-buddy-core-subscription-patterns ',bank-buddy-core-subscription-patterns)
-              (bank-buddy-core-category-names ',bank-buddy-core-category-names))
+              (bank-buddy-core-category-names ',bank-buddy-core-category-names)
+              (bank-buddy-core-transfer-patterns ',bank-buddy-core-transfer-patterns))
           
           (let ((worker-result (bank-buddy--process-csv-async-worker ,csv-file)))
             (plist-put worker-result :csv-file ,csv-file)
@@ -1650,8 +1764,9 @@ This function runs in a separate process via async.el."
            (clrhash bank-buddy-monthly-totals)
            (clrhash bank-buddy-txn-size-dist)
            (clrhash bank-buddy-subs)
-           (clrhash bank-buddy-daily-cumulative-totals)
-           (clrhash bank-buddy-monthly-transaction-counts)
+            (clrhash bank-buddy-daily-cumulative-totals)
+            (clrhash bank-buddy-monthly-transaction-counts)
+            (clrhash bank-buddy-transfers)
            (setq bank-buddy-unmatched-transactions '()) ; Clear previous unmatched list
            
            (setq bank-buddy-date-first nil)
@@ -1676,6 +1791,9 @@ This function runs in a separate process via async.el."
            (when (hash-table-p (plist-get result :daily-cumulative-totals))
              (maphash (lambda (k v) (puthash k v bank-buddy-daily-cumulative-totals))
                       (plist-get result :daily-cumulative-totals)))
+           (when (hash-table-p (plist-get result :transfers))
+             (maphash (lambda (k v) (puthash k v bank-buddy-transfers))
+                      (plist-get result :transfers)))
            
            ;; Get the unmatched transactions list
            (setq bank-buddy-unmatched-transactions (plist-get result :unmatched-transactions))
@@ -1707,6 +1825,7 @@ This function runs in a separate process via async.el."
              
              ;; Generate all the existing report sections
              (bank-buddy-generate-summary-overview)
+             (bank-buddy-generate-transfers-section)
              (bank-buddy-generate-top-spending-categories report-dir)
              (bank-buddy-generate-monthly-spending)
              (bank-buddy-generate-monthly-transaction-counts report-dir)  ; Pass report-dir
